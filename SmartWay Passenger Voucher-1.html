@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SmartWay Transport Voucher</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+:root{
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #3b82f6;
+  --secondary: #64748b;
+  --accent: #10b981;
+  --accent-dark: #059669;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+body{
+  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: var(--background);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.wrap{
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.controls{
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+button{
+  background: var(--primary);
+  color: white;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow);
+}
+
+button:hover{
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Pagination button styles */
+.pagination-btn {
+  background: var(--accent);
+  color: white;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.pagination-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.card{
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: visible;
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+
+.header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header img{
+  height: 200px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.title{
+  text-align: right;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--primary);
+  letter-spacing: -0.025em;
+}
+
+.section{
+  margin-top: 24px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: white;
+  font-weight: 700;
+  word-break: break-word;
+  font-size: 16px;
+  letter-spacing: 0.025em;
+  box-shadow: var(--shadow);
+}
+
+.grid{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 16px;
+}
+
+label{
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.grid > div > label{
+  display: block;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+input, select, textarea{
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  box-sizing: border-box;
+  line-height: 1.5;
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+input:focus, select:focus, textarea:focus{
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+textarea{
+  resize: none;
+}
+
+.routesTable{
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.routesTable th{
+  background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  color: white;
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.routesTable td{
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.footer{
+  margin-top: 32px;
+  padding-top: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  border-top: 2px dashed var(--primary);
+  font-size: 14px;
+}
+
+.footer > div:first-child{
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  white-space: nowrap;
+}
+
+ .contact-links {
+   display: flex;
+   flex-direction: column;
+   gap: 12px;
+   margin-bottom: 20px;
+ }
+
+ .contact-row {
+   display: flex;
+   gap: 20px;
+   justify-content: center;
+   flex-wrap: wrap;
+ }
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: rgba(37, 99, 235, 0.05);
+  border: 1px solid rgba(37, 99, 235, 0.1);
+}
+
+.contact-item:hover {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.2);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.contact-item svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.social-links {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.social-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: rgba(37, 99, 235, 0.05);
+  border: 1px solid rgba(37, 99, 235, 0.1);
+  font-weight: 500;
+}
+
+.social-item:hover {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.2);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.social-item svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.watermark{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.25;
+  pointer-events: none;
+  z-index: 0;
+  width: 50%;
+  height: auto;
+}
+
+.fakeField{
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  box-sizing: border-box;
+  background: var(--surface);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 48px;
+  overflow: visible;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="controls">
+    <button id="btnPdf">Download PDF</button>
+    <button id="btnPrint">Print</button>
+    <button id="btnJson">Save JSON</button>
+    <button id="btnExcel">Save Excel</button>
+  </div>
+
+  <div class="card" id="voucherCard">
+    <!-- Watermark -->
+    <img id="watermark" class="watermark" src="" alt="Logo Watermark" />
+
+    <!-- Header -->
+    <div class="header">
+      <img id="logoPreview" src="" alt="Company Logo">
+      <div class="title">TRANSPORT VOUCHER</div>
+    </div>
+
+    <!-- Voucher Details -->
+    <div class="section">Voucher Details</div>
+    <div class="grid">
+      <div><label>Passenger ID</label><input id="passengerId" readonly></div>
+      <div><label>Sr. No</label><input id="srNo" readonly></div>
+      <div><label>Voucher Date</label><input id="voucherDate" type="date"></div>
+             <div><label>Voucher Time</label><input id="voucherTime" type="time" step="1"></div>
+      <div><label>Status</label><select id="bookingStatus"><option>Success</option><option>Cancelled</option></select></div>
+      <div><label>Approved By</label><input id="approvedBy" value="SmartWay Transport" readonly></div>
+    </div>
+
+    <!-- Passenger Section -->
+    <div class="section">Passenger Details</div>
+    <div style="margin-bottom: 12px; color: var(--text-secondary); font-size: 14px;">
+      Total Passengers: <span id="passengerCount">0</span>
+    </div>
+    <div id="passengersWrapper"></div>
+    <button id="addPassengerBtn" style="background:var(--accent);margin-top:12px;">+ Add Passenger</button>
+
+    <!-- Vehicle & Routes -->
+    <div class="section">Vehicle & Routes</div>
+    <div class="grid">
+      <div><label>Vehicle Type</label>
+        <select id="vehicleType">
+          <option>SEDAN</option><option>SONATA</option><option>CAMRY</option><option>SUV</option><option>STARGAZER</option><option>VELOZ</option><option>STAREX</option><option>STARIA</option>
+          <option>GMC YUKON</option><option>GRAND CABIN</option><option>COASTER</option><option>BUS</option>
+        </select>
+      </div>
+      <div><label>No. of Passengers</label><input type="number" id="numPassengers" min="1" value="1"></div>
+      <div><label>Special Request</label><input id="specialRequest"></div>
+    </div>
+    <div id="routesWrapper"></div>
+    <button id="addRouteBtn" style="background:var(--accent);margin-top:12px;">+ Add Route</button>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div>CONTACT:</div>
+       <div class="contact-links">
+         <div class="contact-row">
+           <a href="https://wa.me/966535891901" target="_blank" class="contact-item">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+             </svg>
+             +966 53 589 1901
+           </a>
+           <a href="https://wa.me/923342246669" target="_blank" class="contact-item">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+             </svg>
+             +92 334 224 6669
+           </a>
+           <a href="mailto:smartwaytransport7@gmail.com" class="contact-item">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+               <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+             </svg>
+             smartwaytransport7@gmail.com
+           </a>
+         </div>
+       </div>
+       <div class="social-links">
+         <a href="https://www.facebook.com/profile.php?id=61579912139472" target="_blank" class="social-item">
+           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+           </svg>
+           SmartWay Transport
+         </a>
+                   <a href="https://www.instagram.com/smartwaytransport7?igsh=djg3bTMwcDEzbndv" target="_blank" class="social-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+            SmartwayTransport7
+          </a>
+       </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let base64Logo = 'data:image/png;base64,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'; // <-- Add your base64 logo here
+document.getElementById('logoPreview').src = base64Logo;
+document.getElementById('watermark').src = base64Logo;
+
+// ---------- Serial / Date / Time ----------
+function nextSerial(){ const key='smartway_last_sr'; const last=parseInt(localStorage.getItem(key)||'1000',10)+1; localStorage.setItem(key,last); return last; }
+document.getElementById('passengerId').value = String(Math.floor(1000000+Math.random()*9000000));
+document.getElementById('srNo').value = nextSerial();
+
+// Function to format time with AM/PM
+function formatTimeWithAMPM(timeString) {
+  if (!timeString) return '';
+  const [hours, minutes, seconds] = timeString.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${displayHour.toString().padStart(2, '0')}:${minutes}:${seconds} ${ampm}`;
+}
+
+function setDateTime(){ 
+  const now=new Date(); 
+  document.getElementById('voucherDate').value=now.toISOString().substr(0,10); 
+  document.getElementById('voucherTime').value=now.toTimeString().substr(0,8); 
+}
+setDateTime(); 
+setInterval(setDateTime,60000);
+
+// ---------- Passengers with Pagination ----------
+let passengerCount = 0;
+let passengersPerPage = 3; // Show 3 passengers per page
+let currentPassengerPage = 1;
+let allPassengers = [];
+
+function addPassenger(prefill={}) {
+  passengerCount++;
+  const passenger = {
+    id: passengerCount,
+    name: prefill.name || '',
+    cnic: prefill.cnic || '',
+    passport: prefill.passport || '',
+    dob: prefill.dob || '',
+    contact: prefill.contact || '',
+    nationality: prefill.nationality || ''
+  };
+  
+  allPassengers.push(passenger);
+  renderPassengers();
+}
+
+function removePassenger(passengerId) {
+  allPassengers = allPassengers.filter(p => p.id !== passengerId);
+  passengerCount = allPassengers.length;
+  
+  // Adjust current page if needed
+  const totalPages = Math.ceil(allPassengers.length / passengersPerPage);
+  if (currentPassengerPage > totalPages && totalPages > 0) {
+    currentPassengerPage = totalPages;
+  }
+  
+  renderPassengers();
+}
+
+function renderPassengers() {
+  const wrapper = document.getElementById('passengersWrapper');
+  wrapper.innerHTML = '';
+  
+  // Update passenger count display
+  const passengerCountElement = document.getElementById('passengerCount');
+  if (passengerCountElement) {
+    passengerCountElement.textContent = allPassengers.length;
+  }
+  
+  const startIndex = (currentPassengerPage - 1) * passengersPerPage;
+  const endIndex = startIndex + passengersPerPage;
+  const passengersToShow = allPassengers.slice(startIndex, endIndex);
+  
+  passengersToShow.forEach(passenger => {
+    const div = document.createElement('div');
+    div.style.border='1px solid #ccc'; 
+    div.style.padding='8px'; 
+    div.style.marginTop='6px';
+    div.style.display='grid'; 
+    div.style.gridTemplateColumns='repeat(3,1fr)'; 
+    div.style.gap='8px';
+    div.innerHTML = `
+      <div><label>Passenger Name</label><input value="${passenger.name}" onchange="updatePassenger(${passenger.id}, 'name', this.value)"></div>
+      <div><label>Passport Number</label><input value="${passenger.passport}" onchange="updatePassenger(${passenger.id}, 'passport', this.value)"></div>
+      <div><label>Date of Birth</label><input type="date" value="${passenger.dob}" onchange="updatePassenger(${passenger.id}, 'dob', this.value)"></div>
+      <div><label>Contact No</label><input value="${passenger.contact}" onchange="updatePassenger(${passenger.id}, 'contact', this.value)"></div>
+      <div><label>Nationality</label><input value="${passenger.nationality}" onchange="updatePassenger(${passenger.id}, 'nationality', this.value)"></div>
+      <div style="grid-column: span 3;"><button type="button" onclick="removePassenger(${passenger.id})" style="background:#ef4444;margin-top:12px;border-radius:8px;">Remove Passenger</button></div>
+    `;
+    wrapper.appendChild(div);
+  });
+  
+  // Add pagination controls
+  addPassengerPagination();
+}
+
+function updatePassenger(passengerId, field, value) {
+  const passenger = allPassengers.find(p => p.id === passengerId);
+  if (passenger) {
+    passenger[field] = value;
+  }
+}
+
+function addPassengerPagination() {
+  const wrapper = document.getElementById('passengersWrapper');
+  const totalPages = Math.ceil(allPassengers.length / passengersPerPage);
+  
+  if (totalPages <= 1) return;
+  
+  const paginationDiv = document.createElement('div');
+  paginationDiv.style.gridColumn = 'span 3';
+  paginationDiv.style.marginTop = '16px';
+  paginationDiv.style.textAlign = 'center';
+  paginationDiv.style.display = 'flex';
+  paginationDiv.style.justifyContent = 'center';
+  paginationDiv.style.alignItems = 'center';
+  paginationDiv.style.gap = '8px';
+  
+  // Previous button
+  const prevBtn = document.createElement('button');
+  prevBtn.textContent = '← Previous';
+  prevBtn.disabled = currentPassengerPage === 1;
+  prevBtn.className = 'pagination-btn';
+  prevBtn.onclick = () => {
+    if (currentPassengerPage > 1) {
+      currentPassengerPage--;
+      renderPassengers();
+    }
+  };
+  
+  // Page info
+  const pageInfo = document.createElement('span');
+  const startIndex = (currentPassengerPage - 1) * passengersPerPage + 1;
+  const endIndex = Math.min(currentPassengerPage * passengersPerPage, allPassengers.length);
+  pageInfo.textContent = `Showing ${startIndex}-${endIndex} of ${allPassengers.length} passengers (Page ${currentPassengerPage} of ${totalPages})`;
+  pageInfo.style.padding = '8px 16px';
+  pageInfo.style.fontWeight = '600';
+  pageInfo.style.color = 'var(--text-secondary)';
+  
+  // Next button
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = 'Next →';
+  nextBtn.disabled = currentPassengerPage === totalPages;
+  nextBtn.className = 'pagination-btn';
+  nextBtn.onclick = () => {
+    if (currentPassengerPage < totalPages) {
+      currentPassengerPage++;
+      renderPassengers();
+    }
+  };
+  
+  paginationDiv.appendChild(prevBtn);
+  paginationDiv.appendChild(pageInfo);
+  paginationDiv.appendChild(nextBtn);
+  wrapper.appendChild(paginationDiv);
+}
+
+// ---------- Routes ----------
+// ---------- Routes ----------
+let routeCount = 0;
+
+function addRoute(prefill={}) {
+  routeCount++;
+  const wrapper = document.getElementById('routesWrapper');
+  const div = document.createElement('div');
+
+  div.style.border='1px solid #ccc';
+  div.style.padding='8px';
+  div.style.marginTop='6px';
+  div.style.display='grid';
+  div.style.gridTemplateColumns='repeat(3,1fr)';
+  div.style.gap='8px';
+
+  div.innerHTML=`
+    <!-- Pick Up -->
+<div>
+  <label>Pick Up Location</label>
+  <input type="text" class="pickupLocation"
+         placeholder="Enter Pickup Location" 
+         value="${prefill.pickup || ''}">
+</div>
+
+<div>
+  <label>Pick Up Date</label>
+  <input type="date" class="pickupDate" value="${prefill.pickupDate||''}">
+</div>
+
+<div>
+  <label>Pick Up Time</label>
+  <input type="time" class="pickupTime" step="1" value="${prefill.pickupTime||''}">
+</div>
+
+<!-- Drop Off -->
+<div style="grid-column: span 3;">
+  <label>Drop Off Location</label>
+  <select class="dropoffLocation" id="dropoffSelect">
+    <option value="">Select</option>
+    <option ${prefill.dropoff==="Kiswa Factory"?"selected":""}>Kiswa Factory, Mecca Museum, Sulah Hudabia</option>
+    <option ${prefill.dropoff==="Kiswa Factory"?"selected":""}>Kiswa Factory, Mecca Museum, Camel Farm, Sulah Hudabia</option>
+    <option ${prefill.dropoff==="Kiswa Factory Museum"?"selected":""}>Kiswa Factory, Mecca Museum</option>
+    <option ${prefill.dropoff==="Sulah Hudaibya"?"selected":""}>Sulah Hudaibya</option>
+    <option ${prefill.dropoff==="Kiswa Factory"?"selected":""}>Kiswa Factory</option>
+    <option ${prefill.dropoff==="Makkah Ziyarat"?"selected":""}>Makkah Ziyarat</option>
+    <option ${prefill.dropoff==="Taif Ziyarat"?"selected":""}>Taif Ziyarat</option>
+    <option ${prefill.dropoff==="Masjid e Ayesha"?"selected":""}>Masjid e Ayesha</option>
+    <option ${prefill.dropoff==="Masjid e Jurana"?"selected":""}>Masjid e Jurana</option>
+    <option ${prefill.dropoff==="Madinah Ziyarat"?"selected":""}>Madinah Ziyarat</option>
+    <option ${prefill.dropoff==="Madinah Ziyarat + Museum"?"selected":""}>Madinah Ziyarat + Madinah Museum</option>
+    <option ${prefill.dropoff==="Wadi e Jin"?"selected":""}>Wadi-e-Jin</option>
+    <option ${prefill.dropoff==="Wadi e Jin + Madinah Museum"?"selected":""}>Wadi e Jin + Madinah Museum</option>
+    <option ${prefill.dropoff==="Badar Ziyarat"?"selected":""}>Badar Ziyarat</option>
+    <option ${prefill.dropoff==="Makkah To Madinah"?"selected":""}>Makkah Hotel to Madinah Hotel</option>
+    <option ${prefill.dropoff==="Madinah To Makkah"?"selected":""}>Madinah Hotel To Makkah Hotel</option>
+    <option ${prefill.dropoff==="Makkah To Madinah Via Badar"?"selected":""}>Makkah Hotel to Madinah Hotel Via Badar</option>
+    <option ${prefill.dropoff==="Madinah To Makkah Via Badar"?"selected":""}>Madinah Hotel To Makkah Hotel Via Badar</option>
+    <option ${prefill.dropoff==="Makkah To Jeddah Airport"?"selected":""}>Makkah Hotel To Jeddah Airport Terminal 1</option>
+    <option ${prefill.dropoff==="Makkah To Jeddah Airport(Haj)"?"selected":""}>Makkah Hotel To Jeddah Airport Terminal Hajj</option>
+    <option ${prefill.dropoff==="Makkah To Jeddah Airport (N)"?"selected":""}>Makkah Hotel To Jeddah Airport Terminal North</option>
+    <option ${prefill.dropoff==="Madinah To Jeddah Airport"?"selected":""}>Madinah Hotel To Jeddah Airport Terminal 1</option>
+    <option ${prefill.dropoff==="Madinah To Jeddah Airport(Haj)"?"selected":""}>Madinah Hotel To Jeddah Airport Terminal Hajj</option>
+    <option ${prefill.dropoff==="Madinah To Jeddah Airport (N)"?"selected":""}>Madinah Hotel To Jeddah Airport Terminal North</option>
+    <option ${prefill.dropoff==="Jeddah Airport Terminal 1 To Makkah Hotel"?"selected":""}>Jeddah Airport Terminal 1 To Makkah Hotel</option>
+    <option ${prefill.dropoff==="Jeddah Airport(Haj) To Makkah Hotel"?"selected":""}>Jeddah Airport Terminal Hajj To Makkah Hotel</option>
+    <option ${prefill.dropoff==="Jeddah Airport(N) To Makkah Hotel"?"selected":""}>Jeddah Airport Terminal North To Makkah Hotel</option>
+    <option ${prefill.dropoff==="Jeddah Airport Terminal 1 To Madinah Hotel"?"selected":""}>Jeddah Airport Terminal 1 To Madinah Hotel</option>
+    <option ${prefill.dropoff==="Jeddah Airport(Haj) To Madinah Hotel"?"selected":""}>Jeddah Airport Terminal Hajj To Madinah Hotel</option>
+    <option ${prefill.dropoff==="Jeddah Airport(N) To Madinah"?"selected":""}>Jeddah Airport Terminal North To Madinah Hotel</option>
+
+    <!-- NEW OTHER OPTION -->
+    <option value="Other" ${prefill.dropoff==="Other"?"selected":""}>Other</option>
+  </select>
+
+  <!-- Hidden manual input -->
+  <input 
+    type="text" 
+    id="otherDropoffInput" 
+    placeholder="Enter custom location" 
+    style="margin-top:10px; display:none; width:100%;"
+  />
+</div>
+
+</div>
+
+<!-- Advance -->
+<div>
+  <label>Advance SAR</label>
+  <input type="number" class="advance" min="0" step="0.01" value="${prefill.advance||''}" placeholder="0.00">
+</div>
+
+<!-- Total -->
+<div>
+  <label>Total SAR</label>
+  <input type="number" class="total" min="0" step="0.01" value="${prefill.total||''}" placeholder="0.00">
+</div>
+
+<!-- Tour Duration -->
+<div>
+  <label>Tour Duration</label>
+  <input class="duration" value="${prefill.duration||''}">
+</div>
+
+<!-- Remove -->
+<div style="grid-column: span 3;">
+  <button type="button" 
+    onclick="this.parentNode.parentNode.remove();"
+    style="background:#ef4444;margin-top:12px;border-radius:8px;">
+    Remove Route
+  </button>
+</div>
+
+  `;
+
+  wrapper.appendChild(div);
+}
+
+document.getElementById('addRouteBtn').addEventListener('click',()=>addRoute());
+
+
+// ---------- Collect Data ----------
+function collectData() {
+  // Passenger data
+  const passengers = allPassengers.map(passenger => ({
+    name: passenger.name,
+    cnic: passenger.cnic,
+    passport: passenger.passport,
+    dob: passenger.dob,
+    contact: passenger.contact,
+    nationality: passenger.nationality
+  }));
+
+  // Routes data (dynamic)
+  const routes = Array.from(document.getElementById('routesWrapper').children).map(div => {
+    const pickup = div.querySelector('.pickupLocation')?.value || '';
+    const pickupDate = div.querySelector('.pickupDate')?.value || '';
+    const pickupTime = div.querySelector('.pickupTime')?.value || '';
+    const dropoff = div.querySelector('.dropoffLocation')?.value || '';
+    const advance = div.querySelector('.advance')?.value || '';
+    const total = div.querySelector('.total')?.value || '';
+    const duration = div.querySelector('.duration')?.value || '';
+
+    // Locations checkboxes
+    const locations = Array.from(div.querySelectorAll('input.locations:checked')).map(cb => cb.value);
+
+    return { pickup, pickupDate, pickupTime, dropoff, advance, total, duration, locations };
+  });
+
+  // Return complete data object
+  return {
+    passengerId: document.getElementById('passengerId').value,
+    srNo: document.getElementById('srNo').value,
+    voucherDate: document.getElementById('voucherDate').value,
+    voucherTime: document.getElementById('voucherTime').value,
+    bookingStatus: document.getElementById('bookingStatus').value,
+    approvedBy: document.getElementById('approvedBy').value,
+    vehicleType: document.getElementById('vehicleType').value,
+    numPassengers: document.getElementById('numPassengers').value,
+    specialRequest: document.getElementById('specialRequest').value,
+    passengers,
+    routes
+  };
+}
+
+
+// ---------- Save JSON ----------
+document.getElementById('btnJson').addEventListener('click',()=>{
+  const data=collectData();
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  saveAs(blob,`voucher_${data.srNo}.json`);
+});
+
+// ---------- Save Excel ----------
+document.getElementById('btnExcel').addEventListener('click',()=>{
+
+  const data = collectData();
+  saveRecord(data);
+
+  const allRecords = JSON.parse(localStorage.getItem("voucherRecords")) || [];
+
+  // ------ FIND MAX PASSENGERS & MAX ROUTES --------
+  let maxPassengers = 0;
+  let maxRoutes = 0;
+
+  allRecords.forEach(r => {
+    if (r.passengers && r.passengers.length > maxPassengers)
+        maxPassengers = r.passengers.length;
+
+    if (r.routes && r.routes.length > maxRoutes)
+        maxRoutes = r.routes.length;
+  });
+
+  // -------- FLATTEN RECORDS --------
+  const flatRecords = allRecords.map(r => {
+    const flat = {
+      passengerId: r.passengerId,
+      srNo: r.srNo,
+      voucherDate: r.voucherDate,
+      voucherTime: r.voucherTime,
+      bookingStatus: r.bookingStatus,
+      approvedBy: r.approvedBy,
+      vehicleType: r.vehicleType,
+      numPassengers: r.numPassengers,
+      specialRequest: r.specialRequest
+    };
+
+    // ---- Expand passengers ----
+    for (let i = 0; i < maxPassengers; i++) {
+      const p = r.passengers[i] || { name:"", cnic:"", passport:"", dob:"", contact:"", nationality:"" };
+
+      flat[`pass${i+1}_name`] = p.name;
+      flat[`pass${i+1}_cnic`] = p.cnic;
+      flat[`pass${i+1}_passport`] = p.passport;
+      flat[`pass${i+1}_dob`] = p.dob;
+      flat[`pass${i+1}_contact`] = p.contact;
+      flat[`pass${i+1}_nationality`] = p.nationality;
+    }
+
+    // ---- Expand routes ----
+    for (let i = 0; i < maxRoutes; i++) {
+      const rt = r.routes[i] || { pickup:"", pickupDate:"", pickupTime:"", dropoff:"", advance:"", total:"" };
+
+      flat[`route${i+1}_pickup`] = rt.pickup;
+      flat[`route${i+1}_pickupDate`] = rt.pickupDate;
+      flat[`route${i+1}_pickupTime`] = rt.pickupTime;
+      flat[`route${i+1}_dropoff`] = rt.dropoff;
+      flat[`route${i+1}_advance`] = rt.advance;
+      flat[`route${i+1}_total`] = rt.total;
+    }
+
+    return flat;
+  });
+
+  // ---- CREATE EXCEL ----
+  const ws = XLSX.utils.json_to_sheet(flatRecords);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Voucher Records');
+
+  XLSX.writeFile(wb, 'All_Vouchers_Expanded.xlsx');
+});
+
+function saveRecord(newData) {
+  let records = JSON.parse(localStorage.getItem("voucherRecords")) || [];
+  records.push(newData);
+  localStorage.setItem("voucherRecords", JSON.stringify(records));
+}
+
+// ---------- Print ----------
+document.getElementById('btnPrint').addEventListener('click',()=>window.print());
+
+// ---------- Download PDF (1 Page Fit) ----------
+document.getElementById('btnPdf').addEventListener('click', async()=>{
+  const controls = document.querySelector('.controls');
+  const voucher = document.getElementById('voucherCard');
+
+  // Build a clean clone with static text for all form fields
+  const clone = voucher.cloneNode(true);
+  clone.id = 'voucherCardExport';
+  clone.style.position = 'fixed';
+  clone.style.left = '-10000px';
+  clone.style.top = '0';
+  clone.style.width = voucher.offsetWidth + 'px';
+  clone.style.zIndex = '9999';
+
+  const replaceField = (el, value) => {
+    const span = document.createElement('span');
+    span.className = 'fakeField';
+    
+    // Format time fields with AM/PM
+    let displayValue = value || ' ';
+    if (el.id === 'voucherTime' && value) {
+      displayValue = formatTimeWithAMPM(value);
+    }
+    
+    span.textContent = displayValue;
+    // Match approximate height
+    const style = getComputedStyle(el);
+    span.style.minHeight = style.height;
+    span.style.font = style.font;
+    span.style.whiteSpace = 'pre-wrap';
+    span.style.alignItems = 'center';
+    span.style.display = 'block';
+    // Ensure consistent padding and sizing
+    span.style.padding = style.padding;
+    span.style.width = '100%';
+    span.style.boxSizing = 'border-box';
+    el.replaceWith(span);
+  };
+
+  // Map values from original to clone
+  const origInputs = voucher.querySelectorAll('input, select, textarea');
+  const cloneInputs = clone.querySelectorAll('input, select, textarea');
+  cloneInputs.forEach((clonedEl, idx) => {
+    const src = origInputs[idx];
+    if (!src) return;
+    let val;
+    if (src.tagName === 'SELECT') {
+      val = src.options[src.selectedIndex]?.text || src.value;
+    } else {
+      val = src.value;
+    }
+    replaceField(clonedEl, val);
+  });
+
+  // Preserve footer styling exactly as it appears on the webpage
+  const footerLinks = clone.querySelectorAll('.footer a');
+  footerLinks.forEach(link => {
+    // Keep original styling but remove clickable functionality
+    link.style.pointerEvents = 'none';
+    link.style.cursor = 'default';
+  });
+  
+  // Force footer layout using CSS Grid for better PDF compatibility
+  const contactRow = clone.querySelector('.contact-row');
+  if (contactRow) {
+    contactRow.style.display = 'grid';
+    contactRow.style.gridTemplateColumns = 'auto auto auto';
+    contactRow.style.gap = '20px';
+    contactRow.style.justifyContent = 'center';
+    contactRow.style.alignItems = 'center';
+    contactRow.style.width = '100%';
+    contactRow.style.textAlign = 'center';
+  }
+  
+  // Ensure each contact item maintains its styling
+  const contactItems = clone.querySelectorAll('.contact-item');
+  contactItems.forEach(item => {
+    item.style.display = 'inline-block';
+    item.style.verticalAlign = 'top';
+    item.style.padding = '8px 12px';
+    item.style.borderRadius = '8px';
+    item.style.background = 'rgba(37, 99, 235, 0.05)';
+    item.style.border = '1px solid rgba(37, 99, 235, 0.1)';
+    item.style.color = 'var(--text-secondary)';
+    item.style.textDecoration = 'none';
+    item.style.whiteSpace = 'nowrap';
+    item.style.margin = '0 10px';
+  });
+  
+  const socialLinks = clone.querySelector('.social-links');
+  if (socialLinks) {
+    socialLinks.style.display = 'grid';
+    socialLinks.style.gridTemplateColumns = 'auto auto';
+    socialLinks.style.gap = '16px';
+    socialLinks.style.justifyContent = 'center';
+    socialLinks.style.alignItems = 'center';
+    socialLinks.style.width = '100%';
+    socialLinks.style.textAlign = 'center';
+  }
+  
+  // Ensure each social item maintains its styling
+  const socialItems = clone.querySelectorAll('.social-item');
+  socialItems.forEach(item => {
+    item.style.display = 'inline-block';
+    item.style.verticalAlign = 'top';
+    item.style.padding = '10px 16px';
+    item.style.borderRadius = '8px';
+    item.style.background = 'rgba(37, 99, 235, 0.05)';
+    item.style.border = '1px solid rgba(37, 99, 235, 0.1)';
+    item.style.color = 'var(--text-secondary)';
+    item.style.textDecoration = 'none';
+    item.style.fontWeight = '500';
+    item.style.whiteSpace = 'nowrap';
+    item.style.margin = '0 8px';
+  });
+  
+  // Fix footer text formatting to prevent line breaks while keeping original style
+  const footerTexts = clone.querySelectorAll('.footer div:not(.contact-links):not(.social-links)');
+  footerTexts.forEach(text => {
+    text.style.whiteSpace = 'nowrap';
+    text.style.display = 'block';
+  });
+
+  // Ensure footer stays at bottom
+  clone.style.display = 'flex';
+  clone.style.flexDirection = 'column';
+  clone.style.minHeight = '100vh';
+  
+  const footer = clone.querySelector('.footer');
+  if (footer) {
+    footer.style.marginTop = 'auto';
+    footer.style.paddingTop = '24px';
+  }
+
+  document.body.appendChild(clone);
+  controls.style.display='none';
+  try{
+    const canvas = await html2canvas(clone,{scale:1.5,allowTaint:true,logging:false,backgroundColor:'#ffffff'});
+    const imgData = canvas.toDataURL('image/jpeg',0.95);
+  const pdf = new jspdf.jsPDF('p','mm','a4');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+  
+  // Calculate scaling to fit content on one A4 page
+  const imgW = canvas.width;
+  const imgH = canvas.height;
+  
+  // Scale to fit width or height, whichever is smaller
+  const scaleX = pdfWidth / imgW;
+  const scaleY = pdfHeight / imgH;
+  const scale = Math.min(scaleX, scaleY) * 0.95; // 95% to ensure margins
+  
+  const finalWidth = imgW * scale;
+  const finalHeight = imgH * scale;
+  
+  // Center the content on the page
+  const x = (pdfWidth - finalWidth) / 2;
+  const y = (pdfHeight - finalHeight) / 2;
+  
+  pdf.addImage(imgData,'JPEG',x,y,finalWidth,finalHeight);
+    
+    pdf.save(`voucher_${document.getElementById('srNo').value}.pdf`);
+  } finally {
+    controls.style.display='flex';
+    clone.remove();
+  }
+});
+
+// Add event listener for add passenger button
+document.getElementById('addPassengerBtn').addEventListener('click',()=>addPassenger());
+
+// Function to create new Excel file
+function createNewExcelFile(data) {
+  const ws = XLSX.utils.json_to_sheet([data]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Vouchers');
+  XLSX.writeFile(wb, `voucher_${data.srNo}.xlsx`);
+  alert('New Excel file created successfully!');
+}
+
+// Override the Excel save button to save to existing files
+document.getElementById('btnExcel').onclick = function() {
+  const data = collectData();
+  
+  // Try to load existing Excel file first
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.xlsx,.xls';
+  input.style.display = 'none';
+  
+  input.onchange = function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      // Load existing file and append data
+      const reader = new FileReader();
+      reader.onchange = function(e) {
+        try {
+          const workbook = XLSX.read(e.target.result, { type: 'array' });
+          
+          // Check if 'Vouchers' sheet exists, if not create it
+          let worksheet = workbook.Sheets['Vouchers'];
+          if (!worksheet) {
+            worksheet = XLSX.utils.json_to_sheet([]);
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Vouchers');
+          }
+          
+          // Convert existing sheet to JSON
+          const existingData = XLSX.utils.sheet_to_json(worksheet);
+          
+          // Add new voucher data
+          existingData.push(data);
+          
+          // Convert back to sheet
+          const newWorksheet = XLSX.utils.json_to_sheet(existingData);
+          workbook.Sheets['Vouchers'] = newWorksheet;
+          
+          // Save the updated file
+          XLSX.writeFile(workbook, file.name);
+          
+          alert('Data successfully added to existing Excel file!');
+        } catch (error) {
+          alert('Error reading existing file. Creating new file instead.');
+          createNewExcelFile(data);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      // No file selected, create new one
+      createNewExcelFile(data);
+    }
+  };
+  
+  // Show file picker
+  document.body.appendChild(input);
+  input.click();
+  document.body.removeChild(input);
+};
+</script>
+</body>
+</html>

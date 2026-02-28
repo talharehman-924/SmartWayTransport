@@ -1,0 +1,84 @@
+===============================================
+  SMARTWAY BOOKING SYSTEM — NEXT.JS + SUPABASE
+===============================================
+
+OVERVIEW:
+  - Next.js 14 framework (easy Vercel deploy)
+  - Supabase for database & member auth
+  - ONE hardcoded admin (server-side, not in DB)
+  - Member sign-ups require admin approval
+
+
+━━━━ 1. SUPABASE SETUP ━━━━
+
+1) Create a free project at https://supabase.com
+2) Go to Dashboard → Settings → API, copy:
+   - Project URL
+   - anon (public) key
+3) Go to SQL Editor → New query → paste the
+   contents of supabase-setup.sql → Run
+4) (Optional) In Authentication → Settings:
+   - Disable email confirmation for testing
+
+
+━━━━ 2. LOCAL DEV ━━━━
+
+1) Edit .env.local and fill in:
+   NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   ADMIN_EMAIL=admin@smartway.com
+   ADMIN_PASSWORD=Admin@12345
+
+2) Install deps:   npm install
+3) Run dev:        npm run dev
+4) Open:           http://localhost:3000
+
+
+━━━━ 3. DEPLOY ON VERCEL ━━━━
+
+1) Push this project to a GitHub repo
+2) Go to https://vercel.com → New Project → Import repo
+3) In Environment Variables, add these 4 vars:
+   NEXT_PUBLIC_SUPABASE_URL
+   NEXT_PUBLIC_SUPABASE_ANON_KEY
+   ADMIN_EMAIL
+   ADMIN_PASSWORD
+4) Click Deploy — done!
+
+
+━━━━ 4. HOW IT WORKS ━━━━
+
+ADMIN:
+  - Hardcoded email/password (set in .env.local)
+  - Validated server-side via /api/admin-login
+  - Can approve/reject new member sign-ups
+  - Can add vehicles, packages, drivers
+  - Can see all bookings, export to CSV
+  - Weekly & monthly summaries
+
+MEMBER:
+  - Signs up via Supabase Auth (email + password)
+  - Status starts as "pending"
+  - Admin must approve before member can log in
+  - Can add bookings, change own password
+
+
+━━━━ 5. FILES ━━━━
+
+pages/
+  index.js        → Login page (3 tabs: Admin, Member, Sign Up)
+  dashboard.js    → Dashboard (bookings, admin panel)
+  _app.js         → App wrapper
+  api/
+    admin-login.js → Server-side admin auth endpoint
+
+lib/
+  supabase.js     → Supabase client init
+  admin.js        → Admin credentials from env
+  db.js           → All database operations
+
+styles/
+  globals.css     → Dark theme styling
+
+.env.local        → Environment variables (DO NOT COMMIT)
+supabase-setup.sql → Database schema + RLS policies

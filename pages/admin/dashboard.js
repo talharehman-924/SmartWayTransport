@@ -1032,15 +1032,14 @@ export default function Dashboard() {
                     <td style={{ color: 'var(--amber)' }}>{bal.totalCommission}</td>
                     <td style={{ color: 'var(--emerald)' }}>{bal.totalPaid}</td>
                     <td style={{ color: bal.netOwed > 0 ? '#ff4d4d' : 'var(--emerald)', fontWeight: 'bold' }}>
-                      {bal.netOwed} SAR
+                      {bal.netOwed > 0 ? `${bal.netOwed} SAR (Driver Owes)` : bal.netOwed < 0 ? `${Math.abs(bal.netOwed)} SAR (Advance/Company Owes)` : '0 SAR'}
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input type="number" id={`payInput_${idx}`} placeholder="SAR" style={{ width: 80, padding: 6 }} min="1" max={bal.netOwed} />
+                        <input type="number" id={`payInput_${idx}`} placeholder="SAR" style={{ width: 80, padding: 6 }} min="1" />
                         <button className="btn-sm primary" onClick={async () => {
                           const amt = Number(document.getElementById(`payInput_${idx}`).value);
                           if (!amt || amt <= 0) { alert('Enter a valid amount.'); return; }
-                          if (amt > bal.netOwed) { alert(`Driver only owes ${bal.netOwed} SAR.`); return; }
                           if (!window.confirm(`Record ${amt} SAR payment from ${bal.driverName}?`)) return;
 
                           try {

@@ -339,7 +339,29 @@ export default function Dashboard() {
 
     // Feature: hide past bookings if driver is assigned and time is past 
     if (b.driverName && b.date) {
-      const dt = new Date(b.date + ' ' + (b.pickupTime || '23:59'));
+      // The pickupTime comes in like "10:30 AM" or "16:55 PM"
+      let dtStr = b.date;
+      if (b.pickupTime) {
+        let pTime = String(b.pickupTime).trim();
+        // Basic cleaning in case it contains redundant PM logic like "16:55 PM"
+        const match = pTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+        if (match) {
+          let [_, h, m, ampm] = match;
+          let hi = parseInt(h);
+          if (ampm) {
+            ampm = ampm.toUpperCase();
+            if (ampm === 'PM' && hi < 12) hi += 12;
+            if (ampm === 'AM' && hi === 12) hi = 0;
+          }
+          dtStr += `T${String(hi).padStart(2, '0')}:${m}:00`;
+        } else {
+          dtStr += 'T23:59:59';
+        }
+      } else {
+        dtStr += 'T23:59:59';
+      }
+
+      const dt = new Date(dtStr);
       if (dt < now) return false;
     }
     return true;
@@ -692,7 +714,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {sortedBookings.map(b => (
+                {upcomingBookings.map(b => (
                   <tr key={b.id}>
                     <td style={{ fontSize: '0.8rem', color: 'var(--cyan)' }}>{b.addedBy || 'Sys'}</td>
                     <td>{b.clientName || '-'}</td>

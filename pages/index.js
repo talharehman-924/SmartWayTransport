@@ -49,8 +49,14 @@ export default function LoginPage() {
       }
 
       // If it hit the admin endpoint and explicitly got rejected for wrong credentials, stop here.
-      if (res.status === 401 && data.error === 'Invalid admin credentials.') {
-        throw new Error('Invalid login credentials.');
+      if (res.status === 401) {
+        if (data.error === 'Invalid admin credentials.') {
+          throw new Error('Invalid login credentials.');
+        }
+        // If they attempt to log in with the admin email but get rejected (e.g. wrong password), don't fall through to member auth
+        if (email.trim().toLowerCase() === 'admin@smartway.com' && data.error === 'Invalid admin credentials or Admin not found.') {
+          throw new Error('Invalid admin credentials. Please ensure you are using the correct admin password.');
+        }
       }
 
       // 2. Fallback to Member Login if not Admin

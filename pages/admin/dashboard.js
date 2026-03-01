@@ -6,6 +6,7 @@ import {
   addVehicle, addPackage, addDriver, addBooking, updateBookingDriver,
   getPendingUsers, approveUser, rejectUser,
   updatePassword, isPasswordStrong, memberSignOut,
+  updateBooking, updateBookingStatus, deleteBooking
 } from '../../lib/db';
 import { isSupabaseReady } from '../../lib/supabase';
 import VoucherTemplate from '../../components/VoucherTemplate';
@@ -36,6 +37,7 @@ export default function Dashboard() {
   });
   const [saveMsg, setSaveMsg] = useState(false);
   const [assignModal, setAssignModal] = useState(null);
+  const [editModal, setEditModal] = useState(null);
   const [lastSavedBooking, setLastSavedBooking] = useState(null);
   const pdfRef = useRef(null);
   const driverPdfRef = useRef(null);
@@ -207,6 +209,7 @@ export default function Dashboard() {
       driverName: b.driverName, driverContact: b.driverContact,
       driverVehicle: b.driverVehicle, driverRegNo: b.driverRegNo,
       commissionSAR: Number(b.commission) || 0,
+      status: 'pending', addedBy: user,
     };
     try {
       const insertedId = await addBooking(bookingDataToSave);
@@ -237,6 +240,39 @@ export default function Dashboard() {
       alert('Driver assigned successfully!');
     } catch (e) {
       alert('Failed to assign driver: ' + e.message);
+    }
+  }
+
+  async function handleEditBooking() {
+    if (!editModal) return;
+    try {
+      await updateBooking(editModal.id, editModal);
+      setEditModal(null);
+      await loadData();
+      alert('Booking updated successfully!');
+    } catch (e) {
+      alert('Failed to update booking: ' + e.message);
+    }
+  }
+
+  async function handleDeleteBooking(id) {
+    if (!confirm("Are you sure you want to delete this booking entirely?")) return;
+    try {
+      await deleteBooking(id);
+      await loadData();
+      alert('Booking deleted.');
+    } catch (e) {
+      alert('Failed to delete: ' + e.message);
+    }
+  }
+
+  async function handleCompleteBooking(id) {
+    if (!confirm("Mark this booking as Completed? It will be hidden from the Upcoming Bookings list.")) return;
+    try {
+      await updateBookingStatus(id, 'completed');
+      await loadData();
+    } catch (e) {
+      alert('You must first create a "status" column in the Supabase bookings table! Ask for instructions if needed. Error: ' + e.message);
     }
   }
 
@@ -279,8 +315,8 @@ export default function Dashboard() {
   const currentMonth = getLocalISODate(now).slice(0, 7);
 
   const weekStart = new Date(now);
-  const day = now.getDay() === 0 ? 7 : now.getDay(); // Treat Sunday (0) as day 7
-  weekStart.setDate(now.getDate() - day + 1);
+  // Using Sunday as the start of the week for Middle East standard.
+  weekStart.setDate(now.getDate() - now.getDay());
   const weekStartStr = getLocalISODate(weekStart);
 
   const weekEnd = new Date(weekStart);
@@ -295,6 +331,19 @@ export default function Dashboard() {
   const totalRev = bookings.reduce((s, b) => s + (Number(b.paymentSAR) || 0), 0);
 
   const sortedBookings = [...bookings].sort((a, b) => (a.date + (a.pickupTime || '')).localeCompare(b.date + (b.pickupTime || '')));
+
+  // Filter out completed bookings from the UI array
+  const upcomingBookings = sortedBookings.filter(b => {
+    // If completed manually, hide it
+    if (b.status === 'completed' || b.status === 'cancelled') return false;
+
+    // Feature: hide past bookings if driver is assigned and time is past 
+    if (b.driverName && b.date) {
+      const dt = new Date(b.date + ' ' + (b.pickupTime || '23:59'));
+      if (dt < now) return false;
+    }
+    return true;
+  });
 
   if (!user) return null;
 
@@ -313,7 +362,9 @@ export default function Dashboard() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
         backdropFilter: 'blur(10px)',
       }}>
-        <span style={{ fontSize: '1.2rem', fontWeight: 700, background: 'linear-gradient(90deg, var(--cyan), var(--purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SmartWay</span>
+        <div style={{ background: '#ffffff', padding: '6px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+          <img src="/output-onlinepngtools.png" alt="SmartWay Logo" style={{ height: '32px', cursor: 'pointer' }} onClick={() => router.push('/')} />
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
           <span className="badge">{role.toUpperCase()}</span>
           <span>{user}</span>
@@ -451,6 +502,82 @@ export default function Dashboard() {
             </div>
           </div>
         </section>
+
+        {/* New Booking Interface for Admin */}
+        <section style={{ marginBottom: 36 }}>
+          <h2 style={{ fontSize: '1.1rem', marginBottom: 14 }}>✨ New Booking</h2>
+          <div className="card" style={{ borderTop: '3px solid var(--cyan)' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12 }}>👤 Passenger Details</p>
+            <div className="row">
+              <input value={booking.clientName} onChange={e => setBooking({ ...booking, clientName: e.target.value })} placeholder="Passenger Name" style={{ minWidth: 140 }} />
+              <input value={booking.clientContact} onChange={e => setBooking({ ...booking, clientContact: e.target.value })} placeholder="Passenger Contact" style={{ minWidth: 140 }} />
+              <input value={booking.pickupLocation} onChange={e => setBooking({ ...booking, pickupLocation: e.target.value })} placeholder="Passenger Location (Pickup)" style={{ minWidth: 200, flex: 1 }} />
+            </div>
+
+            <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>👥 Passengers & Luggage</p>
+            <div className="row">
+              <input type="number" value={booking.adults} onChange={e => setBooking({ ...booking, adults: e.target.value })} placeholder="Adults" min="0" style={{ width: 100 }} />
+              <input type="number" value={booking.children} onChange={e => setBooking({ ...booking, children: e.target.value })} placeholder="Children" min="0" style={{ width: 100 }} />
+            </div>
+            <div className="row" style={{ flexWrap: 'wrap', gap: 16, marginTop: 12 }}>
+              {[['luggageSuitcase', 'Suitcase'], ['luggageHandCarry', 'Hand Carry'], ['luggageCarton', 'Carton'], ['luggageStroller', 'Stroller'], ['luggageWheelchair', 'Wheelchair']].map(([key, label]) => (
+                <label key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--muted)' }}>
+                  <input type="number" value={booking[key]} onChange={e => setBooking({ ...booking, [key]: e.target.value })} placeholder="0" min="0" style={{ width: 56, textAlign: 'center', padding: '8px 10px' }} />
+                  {label}
+                </label>
+              ))}
+            </div>
+
+            <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>🚗 Vehicle & Routes Section</p>
+            <div className="row">
+              <select value={booking.vehicle} onChange={e => setBooking({ ...booking, vehicle: e.target.value })} style={{ minWidth: 160 }}>
+                <option value="">-- Vehicle Type --</option>
+                {vehicles.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+              <select value={booking.package} onChange={e => setBooking({ ...booking, package: e.target.value })} style={{ minWidth: 160 }}>
+                <option value="">-- Package / Route --</option>
+                {packages.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              <select value={booking.dropoffLocation} onChange={e => setBooking({ ...booking, dropoffLocation: e.target.value })} style={{ minWidth: 160 }}>
+                <option value="">-- Drop-off Location --</option>
+                <option value="Kiswa Factory, Mecca Museum, Sulah Hudabia">Kiswa Factory, Mecca Museum, Sulah Hudabia</option>
+                <option value="Jeddah Airport Terminal 1">Jeddah Airport Terminal 1</option>
+                <option value="Jeddah Airport Terminal Hajj">Jeddah Airport Terminal Hajj</option>
+                <option value="Jeddah Airport Terminal North">Jeddah Airport Terminal North</option>
+                <option value="Makkah Hotel">Makkah Hotel</option>
+                <option value="Madinah Hotel">Madinah Hotel</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div className="row" style={{ marginTop: 12 }}>
+              <input type="date" value={booking.date} onChange={e => setBooking({ ...booking, date: e.target.value })} style={{ minWidth: 140 }} />
+              <input type="time" value={booking.time} onChange={e => setBooking({ ...booking, time: e.target.value })} style={{ minWidth: 140 }} />
+              <select value={booking.ampm} onChange={e => setBooking({ ...booking, ampm: e.target.value })} style={{ width: 90 }}>
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
+            <div className="row" style={{ marginTop: 12 }}>
+              <input value={booking.specialRequest} onChange={e => setBooking({ ...booking, specialRequest: e.target.value })} placeholder="Special Request" style={{ minWidth: 200, flex: 1 }} />
+              <input value={booking.totalDuration} onChange={e => setBooking({ ...booking, totalDuration: e.target.value })} placeholder="Total Duration (e.g. 2 Days)" style={{ minWidth: 160 }} />
+            </div>
+
+            <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>💵 Financials (SAR)</p>
+            <div className="row">
+              <input type="number" value={booking.advanceSAR} onChange={e => setBooking({ ...booking, advanceSAR: e.target.value })} placeholder="Advance (SAR)" min="0" style={{ width: 160 }} />
+              <input type="number" value={booking.paymentSAR} onChange={e => setBooking({ ...booking, paymentSAR: e.target.value })} placeholder="Total (SAR)" min="0" style={{ width: 160 }} />
+            </div>
+
+            <div className="row" style={{ marginTop: 28, gap: 16 }}>
+              <button className="btn-sm primary" style={{ padding: '14px 36px', fontSize: '1rem', fontWeight: 600 }} onClick={handleAddBooking}>💾 Save Booking</button>
+            </div>
+            {saveMsg && (
+              <p style={{ fontSize: '0.9rem', color: 'var(--emerald)', marginTop: 16, padding: '10px 16px', background: 'rgba(16,185,129,0.15)', borderRadius: 10, borderLeft: '4px solid var(--emerald)' }}>
+                ✅ Booking saved successfully!
+              </p>
+            )}
+          </div>
+        </section>
         {/* End Admin Views */}
 
 
@@ -512,6 +639,44 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+
+          {editModal && (
+            <div style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'auto',
+              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20
+            }}>
+              <div className="card" style={{ width: '100%', maxWidth: 700, background: 'var(--bg)', borderTop: '3px solid var(--amber)' }}>
+                <h3 style={{ marginBottom: 16 }}>✏️ Edit Booking</h3>
+                <div className="row" style={{ marginBottom: 12 }}>
+                  <input value={editModal.clientName} onChange={e => setEditModal({ ...editModal, clientName: e.target.value })} placeholder="Passenger Name" style={{ flex: 1 }} />
+                  <input value={editModal.clientContact} onChange={e => setEditModal({ ...editModal, clientContact: e.target.value })} placeholder="Contact" style={{ flex: 1 }} />
+                </div>
+                <div className="row" style={{ marginBottom: 12 }}>
+                  <input type="date" value={editModal.date} onChange={e => setEditModal({ ...editModal, date: e.target.value })} style={{ flex: 1 }} />
+                  <input value={editModal.pickupTime} onChange={e => setEditModal({ ...editModal, pickupTime: e.target.value })} placeholder="Time (e.g., 08:30 AM)" style={{ flex: 1 }} />
+                </div>
+                <div className="row" style={{ marginBottom: 12 }}>
+                  <select value={editModal.vehicle} onChange={e => setEditModal({ ...editModal, vehicle: e.target.value })} style={{ flex: 1 }}>
+                    <option value="">-- Vehicle Type --</option>
+                    {vehicles.map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                  <select value={editModal.package} onChange={e => setEditModal({ ...editModal, package: e.target.value })} style={{ flex: 1 }}>
+                    <option value="">-- Package / Route --</option>
+                    {packages.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div className="row" style={{ marginBottom: 20 }}>
+                  <input type="number" value={editModal.paymentSAR} onChange={e => setEditModal({ ...editModal, paymentSAR: e.target.value })} placeholder="Total (SAR)" min="0" style={{ width: 160 }} />
+                </div>
+                <div className="row">
+                  <button className="btn-sm primary" onClick={handleEditBooking}>Save Changes</button>
+                  <button className="btn-sm" onClick={() => setEditModal(null)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
             <h2 style={{ fontSize: '1.1rem', margin: 0 }}>📋 Upcoming Bookings</h2>
             <button className="btn-sm primary" onClick={exportToExcel}>📥 Export to Excel</button>
@@ -520,7 +685,7 @@ export default function Dashboard() {
             <table>
               <thead>
                 <tr>
-                  <th>Client Name</th><th>Contact</th><th>Date</th><th>Time</th><th>Vehicle</th>
+                  <th>Added By</th><th>Client Name</th><th>Contact</th><th>Date</th><th>Time</th><th>Vehicle</th>
                   <th>Package</th><th>Passengers</th><th>Luggage</th><th>Payment</th>
                   <th>Driver</th><th>D.Contact</th><th>D.Vehicle</th><th>Reg No.</th><th>Commission</th>
                   <th>Actions</th>
@@ -529,6 +694,7 @@ export default function Dashboard() {
               <tbody>
                 {sortedBookings.map(b => (
                   <tr key={b.id}>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--cyan)' }}>{b.addedBy || 'Sys'}</td>
                     <td>{b.clientName || '-'}</td>
                     <td>{b.clientContact || '-'}</td>
                     <td>{b.date || '-'}</td>
@@ -543,8 +709,8 @@ export default function Dashboard() {
                     <td>{b.driverVehicle || '-'}</td>
                     <td>{b.driverRegNo || '-'}</td>
                     <td className="sar">{b.commissionSAR || 0} SAR</td>
-                    <td>
-                      <button className="btn-sm primary" style={{ marginBottom: '5px' }} onClick={() => setAssignModal({
+                    <td style={{ minWidth: 160 }}>
+                      <button className="btn-sm primary" style={{ marginBottom: '5px', width: '100%' }} onClick={() => setAssignModal({
                         id: b.id,
                         driverId: b.driverId || '',
                         driverName: b.driverName || '',
@@ -561,12 +727,17 @@ export default function Dashboard() {
                         <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={() => {
                           setLastSavedBooking(b);
                           setTimeout(downloadDriverVoucher, 100);
-                        }}> Driver PDF</button>
+                        }}> PDF</button>
                       )}
+                      <br />
+                      <button className="btn-sm success" style={{ marginBottom: '5px', marginTop: '5px', width: '100%' }} onClick={() => handleCompleteBooking(b.id)}>✓ Confirm Pick</button>
+                      <br />
+                      <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000', marginBottom: '5px', width: '48%', marginRight: '4%' }} onClick={() => setEditModal(b)}>Edit</button>
+                      <button className="btn-sm danger" style={{ marginBottom: '5px', width: '48%' }} onClick={() => handleDeleteBooking(b.id)}>Del</button>
                     </td>
                   </tr>
                 ))}
-                {sortedBookings.length === 0 && <tr><td colSpan={15} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No bookings yet.</td></tr>}
+                {upcomingBookings.length === 0 && <tr><td colSpan={16} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No upcoming bookings.</td></tr>}
               </tbody>
             </table>
           </div>

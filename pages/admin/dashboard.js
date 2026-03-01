@@ -7,7 +7,7 @@ import {
   getPendingUsers, approveUser, rejectUser,
   updatePassword, isPasswordStrong, memberSignOut,
   updateBooking, updateBookingStatus, deleteBooking, toggleCommissionStatus,
-  getDriverBalances, recordDriverPayment
+  getDriverBalances, recordDriverPayment, updateDriver, deleteDriver
 } from '../../lib/db';
 import { isSupabaseReady } from '../../lib/supabase';
 import VoucherTemplate from '../../components/VoucherTemplate';
@@ -42,6 +42,7 @@ export default function Dashboard() {
   const [saveMsg, setSaveMsg] = useState(false);
   const [assignModal, setAssignModal] = useState(null);
   const [editModal, setEditModal] = useState(null);
+  const [editDriverModal, setEditDriverModal] = useState(null);
   const [lastSavedBooking, setLastSavedBooking] = useState(null);
   const pdfRef = useRef(null);
   const driverPdfRef = useRef(null);
@@ -273,6 +274,29 @@ export default function Dashboard() {
       alert('Booking updated successfully!');
     } catch (e) {
       alert('Failed to update booking: ' + e.message);
+    }
+  }
+
+  async function handleUpdateDriver() {
+    if (!editDriverModal) return;
+    try {
+      await updateDriver(editDriverModal.id, editDriverModal);
+      setEditDriverModal(null);
+      await loadData();
+      alert('Driver updated successfully!');
+    } catch (e) {
+      alert('Failed to update driver: ' + e.message);
+    }
+  }
+
+  async function handleDeleteDriver(id) {
+    if (!confirm("Are you sure you want to delete this driver? Ensure they are not assigned to active bookings.")) return;
+    try {
+      await deleteDriver(id);
+      await loadData();
+      alert('Driver deleted.');
+    } catch (e) {
+      alert('Failed to delete driver: ' + e.message);
     }
   }
 
@@ -573,6 +597,74 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Manage Drivers */}
+        <section style={{ marginBottom: 36, position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>🚚 Manage Drivers</h2>
+          </div>
+          <div className="card" style={{ borderTop: '3px solid var(--purple)', overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Driver Name</th>
+                  <th>Contact</th>
+                  <th>Vehicle Name</th>
+                  <th>Vehicle Number</th>
+                  <th>Shirqa Name</th>
+                  <th>Refer By</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {driversList.map(d => (
+                  <tr key={d.id}>
+                    <td style={{ fontWeight: 'bold' }}>{d.name}</td>
+                    <td>{d.contact || '-'}</td>
+                    <td>{d.vehicleName || '-'}</td>
+                    <td>{d.vehicleNumber || '-'}</td>
+                    <td>{d.shirqaName || '-'}</td>
+                    <td>{d.referByName ? `${d.referByName} (${d.referralContact || ''})` : '-'}</td>
+                    <td style={{ display: 'flex', gap: 8 }}>
+                      <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000' }} onClick={() => setEditDriverModal(d)}>Edit</button>
+                      <button className="btn-sm danger" onClick={() => handleDeleteDriver(d.id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+                {driversList.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No drivers found.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+
+          {editDriverModal && (
+            <div style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'auto',
+              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20
+            }}>
+              <div className="card" style={{ width: '100%', maxWidth: 700, background: 'var(--bg)', borderTop: '3px solid var(--amber)' }}>
+                <h3 style={{ marginBottom: 16 }}>✏️ Edit Driver</h3>
+                <div className="row" style={{ marginBottom: 12 }}>
+                  <input value={editDriverModal.name} onChange={e => setEditDriverModal({ ...editDriverModal, name: e.target.value })} placeholder="Driver name" style={{ flex: 1 }} />
+                  <input value={editDriverModal.contact} onChange={e => setEditDriverModal({ ...editDriverModal, contact: e.target.value })} placeholder="Contact" style={{ flex: 1 }} />
+                </div>
+                <div className="row" style={{ marginBottom: 12 }}>
+                  <input value={editDriverModal.vehicleName} onChange={e => setEditDriverModal({ ...editDriverModal, vehicleName: e.target.value })} placeholder="Vehicle name" style={{ flex: 1 }} />
+                  <input value={editDriverModal.vehicleNumber} onChange={e => setEditDriverModal({ ...editDriverModal, vehicleNumber: e.target.value })} placeholder="Vehicle number" style={{ flex: 1 }} />
+                </div>
+                <div className="row" style={{ marginBottom: 20 }}>
+                  <input value={editDriverModal.shirqaName} onChange={e => setEditDriverModal({ ...editDriverModal, shirqaName: e.target.value })} placeholder="Shirqa Name" style={{ flex: 1 }} />
+                  <input value={editDriverModal.referByName} onChange={e => setEditDriverModal({ ...editDriverModal, referByName: e.target.value })} placeholder="Referred By" style={{ flex: 1 }} />
+                  <input value={editDriverModal.referralContact} onChange={e => setEditDriverModal({ ...editDriverModal, referralContact: e.target.value })} placeholder="Referral Contact" style={{ flex: 1 }} />
+                </div>
+                <div className="row" style={{ justifyContent: 'flex-end', gap: 12 }}>
+                  <button className="btn-sm" onClick={() => setEditDriverModal(null)}>Cancel</button>
+                  <button className="btn-sm primary" onClick={handleUpdateDriver}>Save Changes</button>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* New Booking Interface for Admin */}

@@ -108,6 +108,8 @@ CREATE POLICY "config_update" ON config FOR UPDATE TO authenticated, anon USING 
 -- ▸ drivers
 CREATE POLICY "drivers_select" ON drivers FOR SELECT TO authenticated, anon USING (true);
 CREATE POLICY "drivers_insert" ON drivers FOR INSERT TO authenticated, anon WITH CHECK (true);
+CREATE POLICY "drivers_update" ON drivers FOR UPDATE TO authenticated, anon USING (true) WITH CHECK (true);
+CREATE POLICY "drivers_delete" ON drivers FOR DELETE TO authenticated, anon USING (true);
 
 -- ▸ bookings
 CREATE POLICY "bookings_select" ON bookings FOR SELECT TO authenticated, anon USING (true);

@@ -747,6 +747,12 @@ export default function Dashboard() {
 
             <div className="row" style={{ marginTop: 28, gap: 16 }}>
               <button className="btn-sm primary" style={{ padding: '14px 36px', fontSize: '1rem', fontWeight: 600 }} onClick={handleAddBooking}>💾 Save Booking</button>
+              {lastSavedBooking && (
+                <>
+                  <button className="btn-sm" style={{ padding: '14px 20px', fontSize: '0.9rem', fontWeight: 600, background: 'var(--purple)', color: '#fff', border: 'none' }} onClick={downloadVoucher}>📄 Passenger PDF</button>
+                  <button className="btn-sm" style={{ padding: '14px 20px', fontSize: '0.9rem', fontWeight: 600, background: 'var(--pink)', color: '#fff', border: 'none' }} onClick={downloadDriverVoucher}>🚕 Driver PDF</button>
+                </>
+              )}
             </div>
             {saveMsg && (
               <p style={{ fontSize: '0.9rem', color: 'var(--emerald)', marginTop: 16, padding: '10px 16px', background: 'rgba(16,185,129,0.15)', borderRadius: 10, borderLeft: '4px solid var(--emerald)' }}>

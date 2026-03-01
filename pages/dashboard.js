@@ -212,6 +212,7 @@ export default function Dashboard() {
       commissionSAR: Number(b.commission) || 0,
       paymentMode: b.paymentMode || 'Cash', commissionReceived: b.commissionReceived || 'No',
       bookingReferBy: b.bookingReferBy || '', bookingReferralContact: b.bookingReferralContact || '',
+      addedBy: user,
     };
     try {
       const insertedId = await addBooking(bookingDataToSave);

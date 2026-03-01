@@ -56,7 +56,8 @@ export default function Dashboard() {
         backgroundColor: '#ffffff'
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      // Compress to JPEG to drastically reduce file size instead of pure raw PNG
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const imgW = canvas.width;
       const imgH = canvas.height;
 
@@ -67,7 +68,7 @@ export default function Dashboard() {
         format: [imgW, imgH]
       });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, undefined, 'FAST');
       pdf.save(`SmartWay_Voucher_${lastSavedBooking?.date || 'Download'}.pdf`);
 
     } catch (err) {
@@ -88,7 +89,8 @@ export default function Dashboard() {
         backgroundColor: '#ffffff'
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      // Compress to JPEG to drastically reduce file size instead of pure raw PNG
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const imgW = canvas.width;
       const imgH = canvas.height;
 
@@ -99,7 +101,7 @@ export default function Dashboard() {
         format: [imgW, imgH]
       });
 
-      pdf.addImage(imgData, 'PNG', 0, 0, imgW, imgH);
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, undefined, 'FAST');
       pdf.save(`SmartWay_Driver_Voucher_${lastSavedBooking?.date || 'Download'}.pdf`);
 
     } catch (err) {

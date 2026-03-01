@@ -761,10 +761,11 @@ export default function Dashboard() {
                     <option value="Cash">Cash</option>
                     <option value="Online">Online</option>
                   </select>
-                  <select value={editModal.commissionReceived} onChange={e => setEditModal({ ...editModal, commissionReceived: e.target.value })} style={{ width: 140 }}>
-                    <option value="No">Commission: No</option>
-                    <option value="Yes">Commission: Yes</option>
+                  <select value={editModal.commissionReceived} onChange={e => setEditModal({ ...editModal, commissionReceived: e.target.value })} style={{ width: 180 }}>
+                    <option value="No">Commission: Pending</option>
+                    <option value="Yes">Commission: Received</option>
                   </select>
+                  <input type="number" value={editModal.commissionSAR} onChange={e => setEditModal({ ...editModal, commissionSAR: e.target.value })} placeholder="Commission (SAR)" style={{ width: 160 }} />
                 </div>
                 <div className="row">
                   <button className="btn-sm primary" onClick={handleEditBooking}>Save Changes</button>

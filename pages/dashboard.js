@@ -517,24 +517,26 @@ export default function Dashboard() {
 
               <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>🚗 Vehicle & Routes Section</p>
               <div className="row">
-                <select value={booking.vehicle} onChange={e => setBooking({ ...booking, vehicle: e.target.value })} style={{ minWidth: 160 }}>
-                  <option value="">-- Vehicle Type --</option>
-                  {vehicles.map(v => <option key={v} value={v}>{v}</option>)}
-                </select>
-                <select value={booking.package} onChange={e => setBooking({ ...booking, package: e.target.value })} style={{ minWidth: 160 }}>
-                  <option value="">-- Package / Route (Pickup to Drop-off) --</option>
-                  {packages.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-                <select value={booking.dropoffLocation} onChange={e => setBooking({ ...booking, dropoffLocation: e.target.value })} style={{ minWidth: 160 }}>
-                  <option value="">-- Drop-off Location --</option>
-                  <option value="Kiswa Factory, Mecca Museum, Sulah Hudabia">Kiswa Factory, Mecca Museum, Sulah Hudabia</option>
-                  <option value="Jeddah Airport Terminal 1">Jeddah Airport Terminal 1</option>
-                  <option value="Jeddah Airport Terminal Hajj">Jeddah Airport Terminal Hajj</option>
-                  <option value="Jeddah Airport Terminal North">Jeddah Airport Terminal North</option>
-                  <option value="Makkah Hotel">Makkah Hotel</option>
-                  <option value="Madinah Hotel">Madinah Hotel</option>
-                  <option value="Other">Other</option>
-                </select>
+                <input list="memberVehicleList" placeholder="-- Vehicle Type --" value={booking.vehicle} onChange={e => setBooking({ ...booking, vehicle: e.target.value })} style={{ minWidth: 160, flex: 1 }} />
+                <datalist id="memberVehicleList">
+                  {vehicles.map(v => <option key={v} value={v} />)}
+                </datalist>
+
+                <input list="memberPackageList" placeholder="-- Package / Route (Pickup to Drop-off) --" value={booking.package} onChange={e => setBooking({ ...booking, package: e.target.value })} style={{ minWidth: 160, flex: 1 }} />
+                <datalist id="memberPackageList">
+                  {packages.map(p => <option key={p} value={p} />)}
+                </datalist>
+
+                <input list="memberDropoffList" placeholder="-- Drop-off Location --" value={booking.dropoffLocation} onChange={e => setBooking({ ...booking, dropoffLocation: e.target.value })} style={{ minWidth: 160, flex: 1 }} />
+                <datalist id="memberDropoffList">
+                  <option value="Kiswa Factory, Mecca Museum, Sulah Hudabia" />
+                  <option value="Jeddah Airport Terminal 1" />
+                  <option value="Jeddah Airport Terminal Hajj" />
+                  <option value="Jeddah Airport Terminal North" />
+                  <option value="Makkah Hotel" />
+                  <option value="Madinah Hotel" />
+                  <option value="Other" />
+                </datalist>
               </div>
               <div className="row" style={{ marginTop: 12 }}>
                 <input type="date" value={booking.date} onChange={e => setBooking({ ...booking, date: e.target.value })} style={{ minWidth: 140 }} />

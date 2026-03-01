@@ -34,6 +34,7 @@ export default function Dashboard() {
     vehicle: '', package: '', adults: '', children: '',
     luggageSuitcase: '', luggageHandCarry: '', luggageCarton: '', luggageStroller: '', luggageWheelchair: '',
     paymentSAR: '', advanceSAR: '', driverName: '', driverContact: '', driverVehicle: '', driverRegNo: '', commission: '',
+    paymentMode: 'Cash', commissionReceived: 'No',
   });
   const [saveMsg, setSaveMsg] = useState(false);
   const [assignModal, setAssignModal] = useState(null);
@@ -209,6 +210,7 @@ export default function Dashboard() {
       driverName: b.driverName, driverContact: b.driverContact,
       driverVehicle: b.driverVehicle, driverRegNo: b.driverRegNo,
       commissionSAR: Number(b.commission) || 0,
+      paymentMode: b.paymentMode || 'Cash', commissionReceived: b.commissionReceived || 'No',
       status: 'pending', addedBy: user,
     };
     try {
@@ -263,6 +265,16 @@ export default function Dashboard() {
       alert('Booking deleted.');
     } catch (e) {
       alert('Failed to delete: ' + e.message);
+    }
+  }
+
+  async function handleCancelBooking(id) {
+    if (!confirm("Are you sure you want to cancel this booking? It will be moved to the completed/records list.")) return;
+    try {
+      await updateBookingStatus(id, 'cancelled');
+      await loadData();
+    } catch (e) {
+      alert('Failed to cancel: ' + e.message);
     }
   }
 
@@ -366,6 +378,8 @@ export default function Dashboard() {
     }
     return true;
   });
+
+  const pastBookings = sortedBookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
 
   if (!user) return null;
 
@@ -588,6 +602,10 @@ export default function Dashboard() {
             <div className="row">
               <input type="number" value={booking.advanceSAR} onChange={e => setBooking({ ...booking, advanceSAR: e.target.value })} placeholder="Advance (SAR)" min="0" style={{ width: 160 }} />
               <input type="number" value={booking.paymentSAR} onChange={e => setBooking({ ...booking, paymentSAR: e.target.value })} placeholder="Total (SAR)" min="0" style={{ width: 160 }} />
+              <select value={booking.paymentMode} onChange={e => setBooking({ ...booking, paymentMode: e.target.value })} style={{ width: 160 }}>
+                <option value="Cash">Cash</option>
+                <option value="Online">Online</option>
+              </select>
             </div>
 
             <div className="row" style={{ marginTop: 28, gap: 16 }}>
@@ -673,10 +691,21 @@ export default function Dashboard() {
                 <div className="row" style={{ marginBottom: 12 }}>
                   <input value={editModal.clientName} onChange={e => setEditModal({ ...editModal, clientName: e.target.value })} placeholder="Passenger Name" style={{ flex: 1 }} />
                   <input value={editModal.clientContact} onChange={e => setEditModal({ ...editModal, clientContact: e.target.value })} placeholder="Contact" style={{ flex: 1 }} />
+                  <input value={editModal.pickupLocation} onChange={e => setEditModal({ ...editModal, pickupLocation: e.target.value })} placeholder="Pickup Location" style={{ flex: 1 }} />
                 </div>
                 <div className="row" style={{ marginBottom: 12 }}>
                   <input type="date" value={editModal.date} onChange={e => setEditModal({ ...editModal, date: e.target.value })} style={{ flex: 1 }} />
                   <input value={editModal.pickupTime} onChange={e => setEditModal({ ...editModal, pickupTime: e.target.value })} placeholder="Time (e.g., 08:30 AM)" style={{ flex: 1 }} />
+                  <select value={editModal.dropoffLocation} onChange={e => setEditModal({ ...editModal, dropoffLocation: e.target.value })} style={{ flex: 1 }}>
+                    <option value="">-- Drop-off Location --</option>
+                    <option value="Kiswa Factory, Mecca Museum, Sulah Hudabia">Kiswa Factory, Mecca Museum, Sulah Hudabia</option>
+                    <option value="Jeddah Airport Terminal 1">Jeddah Airport Terminal 1</option>
+                    <option value="Jeddah Airport Terminal Hajj">Jeddah Airport Terminal Hajj</option>
+                    <option value="Jeddah Airport Terminal North">Jeddah Airport Terminal North</option>
+                    <option value="Makkah Hotel">Makkah Hotel</option>
+                    <option value="Madinah Hotel">Madinah Hotel</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
                 <div className="row" style={{ marginBottom: 12 }}>
                   <select value={editModal.vehicle} onChange={e => setEditModal({ ...editModal, vehicle: e.target.value })} style={{ flex: 1 }}>
@@ -687,9 +716,25 @@ export default function Dashboard() {
                     <option value="">-- Package / Route --</option>
                     {packages.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
+                  <input value={editModal.specialRequest} onChange={e => setEditModal({ ...editModal, specialRequest: e.target.value })} placeholder="Special Request" style={{ flex: 1 }} />
+                </div>
+                <div className="row" style={{ marginBottom: 12 }}>
+                  <input type="number" value={editModal.adults} onChange={e => setEditModal({ ...editModal, adults: e.target.value })} placeholder="Adults" style={{ width: 80 }} />
+                  <input type="number" value={editModal.children} onChange={e => setEditModal({ ...editModal, children: e.target.value })} placeholder="Children" style={{ width: 80 }} />
+                  <input type="number" value={editModal.luggageSuitcase} onChange={e => setEditModal({ ...editModal, luggageSuitcase: e.target.value })} placeholder="Suitcases" style={{ width: 90 }} />
+                  <input type="number" value={editModal.luggageHandCarry} onChange={e => setEditModal({ ...editModal, luggageHandCarry: e.target.value })} placeholder="HandCarrys" style={{ width: 90 }} />
                 </div>
                 <div className="row" style={{ marginBottom: 20 }}>
-                  <input type="number" value={editModal.paymentSAR} onChange={e => setEditModal({ ...editModal, paymentSAR: e.target.value })} placeholder="Total (SAR)" min="0" style={{ width: 160 }} />
+                  <input type="number" value={editModal.advanceSAR} onChange={e => setEditModal({ ...editModal, advanceSAR: e.target.value })} placeholder="Advance (SAR)" style={{ width: 140 }} />
+                  <input type="number" value={editModal.paymentSAR} onChange={e => setEditModal({ ...editModal, paymentSAR: e.target.value })} placeholder="Total (SAR)" style={{ width: 140 }} />
+                  <select value={editModal.paymentMode} onChange={e => setEditModal({ ...editModal, paymentMode: e.target.value })} style={{ width: 140 }}>
+                    <option value="Cash">Cash</option>
+                    <option value="Online">Online</option>
+                  </select>
+                  <select value={editModal.commissionReceived} onChange={e => setEditModal({ ...editModal, commissionReceived: e.target.value })} style={{ width: 140 }}>
+                    <option value="No">Commission: No</option>
+                    <option value="Yes">Commission: Yes</option>
+                  </select>
                 </div>
                 <div className="row">
                   <button className="btn-sm primary" onClick={handleEditBooking}>Save Changes</button>
@@ -755,11 +800,61 @@ export default function Dashboard() {
                       <button className="btn-sm success" style={{ marginBottom: '5px', marginTop: '5px', width: '100%' }} onClick={() => handleCompleteBooking(b.id)}>✓ Confirm Pick</button>
                       <br />
                       <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000', marginBottom: '5px', width: '48%', marginRight: '4%' }} onClick={() => setEditModal(b)}>Edit</button>
-                      <button className="btn-sm danger" style={{ marginBottom: '5px', width: '48%' }} onClick={() => handleDeleteBooking(b.id)}>Del</button>
+                      <button className="btn-sm danger" style={{ marginBottom: '5px', width: '48%' }} onClick={() => handleCancelBooking(b.id)}>Cancel</button>
                     </td>
                   </tr>
                 ))}
                 {upcomingBookings.length === 0 && <tr><td colSpan={16} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No upcoming bookings.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Past Bookings Table (admin only) */}
+        <section style={{ marginBottom: 36, position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>📜 Past & Completed Bookings</h2>
+          </div>
+          <div className="card" style={{ borderTop: '3px solid var(--pink)', overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Status</th><th>Added By</th><th>Client Name</th><th>Date</th><th>Item Details</th>
+                  <th>Payment</th><th>Driver / Commission</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pastBookings.map(b => (
+                  <tr key={b.id} style={{ opacity: b.status === 'cancelled' ? 0.6 : 1 }}>
+                    <td>
+                      <span className="badge" style={{ background: b.status === 'completed' ? 'var(--emerald)' : 'var(--danger)' }}>
+                        {b.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--cyan)' }}>{b.addedBy || 'Sys'}</td>
+                    <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.clientContact}</span></td>
+                    <td>{b.date || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.pickupTime}</span></td>
+                    <td style={{ fontSize: '0.85rem' }}>
+                      🚗 {b.vehicle} | 📦 {b.package}<br />
+                      {b.paymentMode === 'Online' ? '💳 Online' : '💵 Cash'}
+                    </td>
+                    <td className="sar">
+                      Adv: {b.advanceSAR || 0}<br />
+                      Total: {b.paymentSAR || 0}
+                    </td>
+                    <td style={{ fontSize: '0.85rem' }}>
+                      {b.driverName || 'No Driver'}<br />
+                      <span style={{ color: b.commissionReceived === 'Yes' ? 'var(--emerald)' : 'var(--amber)' }}>
+                        Comm: {b.commissionSAR || 0} ({b.commissionReceived === 'Yes' ? 'Received' : 'Pending'})
+                      </span>
+                    </td>
+                    <td style={{ minWidth: 100 }}>
+                      <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000', marginBottom: '5px', width: '100%' }} onClick={() => setEditModal(b)}>Edit</button>
+                    </td>
+                  </tr>
+                ))}
+                {pastBookings.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No past bookings.</td></tr>}
               </tbody>
             </table>
           </div>

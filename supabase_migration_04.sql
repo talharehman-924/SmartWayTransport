@@ -1,0 +1,1 @@
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_mode TEXT DEFAULT 'Cash'; ALTER TABLE bookings ADD COLUMN IF NOT EXISTS commission_received TEXT DEFAULT 'No';

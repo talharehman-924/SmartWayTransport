@@ -33,6 +33,7 @@ export default function Dashboard() {
     vehicle: '', package: '', adults: '', children: '',
     luggageSuitcase: '', luggageHandCarry: '', luggageCarton: '', luggageStroller: '', luggageWheelchair: '',
     paymentSAR: '', advanceSAR: '', driverName: '', driverContact: '', driverVehicle: '', driverRegNo: '', commission: '',
+    paymentMode: 'Cash', commissionReceived: 'No',
   });
   const [saveMsg, setSaveMsg] = useState(false);
   const [assignModal, setAssignModal] = useState(null);
@@ -207,6 +208,7 @@ export default function Dashboard() {
       driverName: b.driverName, driverContact: b.driverContact,
       driverVehicle: b.driverVehicle, driverRegNo: b.driverRegNo,
       commissionSAR: Number(b.commission) || 0,
+      paymentMode: b.paymentMode || 'Cash',
     };
     try {
       const insertedId = await addBooking(bookingDataToSave);
@@ -537,6 +539,10 @@ export default function Dashboard() {
               <div className="row">
                 <input type="number" value={booking.advanceSAR} onChange={e => setBooking({ ...booking, advanceSAR: e.target.value })} placeholder="Advance (SAR)" min="0" style={{ width: 160 }} />
                 <input type="number" value={booking.paymentSAR} onChange={e => setBooking({ ...booking, paymentSAR: e.target.value })} placeholder="Total (SAR)" min="0" style={{ width: 160 }} />
+                <select value={booking.paymentMode} onChange={e => setBooking({ ...booking, paymentMode: e.target.value })} style={{ width: 160 }}>
+                  <option value="Cash">Cash</option>
+                  <option value="Online">Online</option>
+                </select>
               </div>
 
               <div className="row" style={{ marginTop: 28, gap: 16 }}>

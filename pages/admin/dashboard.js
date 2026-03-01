@@ -927,9 +927,9 @@ export default function Dashboard() {
               <thead>
                 <tr>
                   <th>Driver Name</th>
-                  <th>Total Pending</th>
+                  <th>Total Commission</th>
                   <th>Total Paid</th>
-                  <th>Net Owed (SAR)</th>
+                  <th>Remaining (Net Owed)</th>
                   <th>Record Payment</th>
                 </tr>
               </thead>
@@ -937,7 +937,7 @@ export default function Dashboard() {
                 {driverBalances.map((bal, idx) => (
                   <tr key={idx}>
                     <td style={{ fontWeight: 'bold' }}>{bal.driverName}</td>
-                    <td style={{ color: 'var(--amber)' }}>{bal.totalPending}</td>
+                    <td style={{ color: 'var(--amber)' }}>{bal.totalCommission}</td>
                     <td style={{ color: 'var(--emerald)' }}>{bal.totalPaid}</td>
                     <td style={{ color: bal.netOwed > 0 ? '#ff4d4d' : 'var(--emerald)', fontWeight: 'bold' }}>
                       {bal.netOwed} SAR

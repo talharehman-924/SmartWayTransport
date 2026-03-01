@@ -7,7 +7,8 @@ import {
   getPendingUsers, approveUser, rejectUser,
   updatePassword, isPasswordStrong, memberSignOut,
   updateBooking, updateBookingStatus, deleteBooking, toggleCommissionStatus,
-  getDriverBalances, recordDriverPayment, updateDriver, deleteDriver
+  getDriverBalances, recordDriverPayment, updateDriver, deleteDriver,
+  getDriverPaymentHistory
 } from '../../lib/db';
 import { isSupabaseReady } from '../../lib/supabase';
 import VoucherTemplate from '../../components/VoucherTemplate';
@@ -43,6 +44,8 @@ export default function Dashboard() {
   const [assignModal, setAssignModal] = useState(null);
   const [editModal, setEditModal] = useState(null);
   const [editDriverModal, setEditDriverModal] = useState(null);
+  const [paymentHistoryModal, setPaymentHistoryModal] = useState(null); // stores array of payments or null
+  const [selectedDriverForHistory, setSelectedDriverForHistory] = useState('');
   const [lastSavedBooking, setLastSavedBooking] = useState(null);
   const pdfRef = useRef(null);
   const driverPdfRef = useRef(null);
@@ -1036,15 +1039,24 @@ export default function Dashboard() {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input type="number" id={`payInput_${idx}`} placeholder="SAR" style={{ width: 80, padding: 6 }} min="1" />
+                        <input type="number" id={`payInput_amt_${idx}`} placeholder="SAR" style={{ width: 80, padding: 6 }} min="1" />
+                        <select id={`payInput_mode_${idx}`} style={{ width: 90, padding: 6 }}>
+                          <option value="Cash">Cash</option>
+                          <option value="Online">Online</option>
+                        </select>
+                        <input type="text" id={`payInput_comment_${idx}`} placeholder="Add comment..." style={{ width: 140, padding: 6 }} />
                         <button className="btn-sm primary" onClick={async () => {
-                          const amt = Number(document.getElementById(`payInput_${idx}`).value);
+                          const amt = Number(document.getElementById(`payInput_amt_${idx}`).value);
+                          const mode = document.getElementById(`payInput_mode_${idx}`).value;
+                          const comment = document.getElementById(`payInput_comment_${idx}`).value;
+
                           if (!amt || amt <= 0) { alert('Enter a valid amount.'); return; }
-                          if (!window.confirm(`Record ${amt} SAR payment from ${bal.driverName}?`)) return;
+                          if (!window.confirm(`Record ${amt} SAR payment by ${mode} from ${bal.driverName}?`)) return;
 
                           try {
-                            await recordDriverPayment(bal.driverName, amt, 'Cash', user);
-                            document.getElementById(`payInput_${idx}`).value = '';
+                            await recordDriverPayment(bal.driverName, amt, mode, user, comment);
+                            document.getElementById(`payInput_amt_${idx}`).value = '';
+                            document.getElementById(`payInput_comment_${idx}`).value = '';
                             loadData();
                             alert('Payment recorded successfully!');
                           } catch (err) {
@@ -1052,6 +1064,15 @@ export default function Dashboard() {
                           }
                         }}>
                           Record
+                        </button>
+                        <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={async () => {
+                          try {
+                            const history = await getDriverPaymentHistory(bal.driverName);
+                            setSelectedDriverForHistory(bal.driverName);
+                            setPaymentHistoryModal(history);
+                          } catch (err) { alert('Failed to load history: ' + err.message); }
+                        }}>
+                          History
                         </button>
                       </div>
                     </td>
@@ -1062,6 +1083,51 @@ export default function Dashboard() {
             </table>
           </div>
         </section>
+
+        {/* Payment History Modal */}
+        {paymentHistoryModal && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, overflowY: 'auto',
+            background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20
+          }}>
+            <div className="card" style={{ width: '100%', maxWidth: 700, background: 'var(--bg)', borderTop: '3px solid var(--cyan)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h3 style={{ margin: 0 }}>📜 Payment History - {selectedDriverForHistory}</h3>
+                <button className="btn-sm" onClick={() => setPaymentHistoryModal(null)}>Close</button>
+              </div>
+
+              <div style={{ overflowX: 'auto', maxHeight: '400px' }}>
+                <table style={{ minWidth: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th>Date & Time</th>
+                      <th>Amount (SAR)</th>
+                      <th>Mode</th>
+                      <th>Comment</th>
+                      <th>Recorded By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paymentHistoryModal.map(p => (
+                      <tr key={p.id}>
+                        <td style={{ fontSize: '0.85rem' }}>{new Date(p.created_at).toLocaleString()}</td>
+                        <td style={{ fontWeight: 'bold', color: 'var(--emerald)' }}>{p.amount}</td>
+                        <td>{p.payment_method}</td>
+                        <td style={{ maxWidth: 200, wordWrap: 'break-word', whiteSpace: 'normal', fontSize: '0.9rem' }}>{p.comments || '-'}</td>
+                        <td style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>{p.recorded_by}</td>
+                      </tr>
+                    ))}
+                    {paymentHistoryModal.length === 0 && (
+                      <tr><td colSpan={5} style={{ textAlign: 'center', padding: 20, color: 'var(--muted)' }}>No payment history recorded yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main >
     </>
   );

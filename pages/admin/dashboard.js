@@ -6,7 +6,7 @@ import {
   addVehicle, addPackage, addDriver, addBooking, updateBookingDriver,
   getPendingUsers, approveUser, rejectUser,
   updatePassword, isPasswordStrong, memberSignOut,
-  updateBooking, updateBookingStatus, deleteBooking
+  updateBooking, updateBookingStatus, deleteBooking, toggleCommissionStatus
 } from '../../lib/db';
 import { isSupabaseReady } from '../../lib/supabase';
 import VoucherTemplate from '../../components/VoucherTemplate';
@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [showChangePwd, setShowChangePwd] = useState(false);
   const [pwdMsg, setPwdMsg] = useState({ text: '', color: '' });
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form states
   const [newVehicle, setNewVehicle] = useState('');
@@ -34,7 +35,7 @@ export default function Dashboard() {
     vehicle: '', package: '', adults: '', children: '',
     luggageSuitcase: '', luggageHandCarry: '', luggageCarton: '', luggageStroller: '', luggageWheelchair: '',
     paymentSAR: '', advanceSAR: '', driverName: '', driverContact: '', driverVehicle: '', driverRegNo: '', commission: '',
-    paymentMode: 'Cash', commissionReceived: 'No',
+    paymentMode: 'Cash', commissionReceived: 'No', bookingReferBy: '', bookingReferralContact: '',
   });
   const [saveMsg, setSaveMsg] = useState(false);
   const [assignModal, setAssignModal] = useState(null);
@@ -211,6 +212,7 @@ export default function Dashboard() {
       driverVehicle: b.driverVehicle, driverRegNo: b.driverRegNo,
       commissionSAR: Number(b.commission) || 0,
       paymentMode: b.paymentMode || 'Cash', commissionReceived: b.commissionReceived || 'No',
+      bookingReferBy: b.bookingReferBy || '', bookingReferralContact: b.bookingReferralContact || '',
       status: 'pending', addedBy: user,
     };
     try {
@@ -223,6 +225,7 @@ export default function Dashboard() {
         vehicle: '', package: '', adults: '', children: '',
         luggageSuitcase: '', luggageHandCarry: '', luggageCarton: '', luggageStroller: '', luggageWheelchair: '',
         paymentSAR: '', advanceSAR: '', driverName: '', driverContact: '', driverVehicle: '', driverRegNo: '', commission: '',
+        paymentMode: 'Cash', commissionReceived: 'No', bookingReferBy: '', bookingReferralContact: '',
       });
       await loadData();
       setSaveMsg(true);
@@ -285,6 +288,16 @@ export default function Dashboard() {
       await loadData();
     } catch (e) {
       alert('You must first create a "status" column in the Supabase bookings table! Ask for instructions if needed. Error: ' + e.message);
+    }
+  }
+
+  async function handleToggleCommission(id, currentStatus) {
+    const newStatus = currentStatus === 'Yes' ? 'No' : 'Yes';
+    try {
+      await toggleCommissionStatus(id, newStatus);
+      await loadData();
+    } catch (e) {
+      alert('Failed to toggle commission: ' + e.message);
     }
   }
 
@@ -374,8 +387,19 @@ export default function Dashboard() {
     return false;
   };
 
-  const upcomingBookings = sortedBookings.filter(b => !isPastBooking(b));
-  const pastBookings = sortedBookings.filter(b => isPastBooking(b));
+  const passesSearch = (b) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const searchable = [
+      b.clientName, b.clientContact,
+      b.driverName, b.driverContact,
+      b.bookingReferBy, b.bookingReferralContact
+    ].map(s => (s || '').toLowerCase()).join(' ');
+    return searchable.includes(q);
+  };
+
+  const upcomingBookings = sortedBookings.filter(b => !isPastBooking(b) && passesSearch(b));
+  const pastBookings = sortedBookings.filter(b => isPastBooking(b) && passesSearch(b));
 
   if (!user) return null;
 
@@ -545,6 +569,10 @@ export default function Dashboard() {
               <input value={booking.clientContact} onChange={e => setBooking({ ...booking, clientContact: e.target.value })} placeholder="Passenger Contact" style={{ minWidth: 140 }} />
               <input value={booking.pickupLocation} onChange={e => setBooking({ ...booking, pickupLocation: e.target.value })} placeholder="Passenger Location (Pickup)" style={{ minWidth: 200, flex: 1 }} />
             </div>
+            <div className="row" style={{ marginTop: 12 }}>
+              <input value={booking.bookingReferBy} onChange={e => setBooking({ ...booking, bookingReferBy: e.target.value })} placeholder="Refer By (Name)" style={{ minWidth: 140 }} />
+              <input value={booking.bookingReferralContact} onChange={e => setBooking({ ...booking, bookingReferralContact: e.target.value })} placeholder="Referral Contact" style={{ minWidth: 140 }} />
+            </div>
 
             <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>👥 Passengers & Luggage</p>
             <div className="row">
@@ -690,6 +718,10 @@ export default function Dashboard() {
                   <input value={editModal.pickupLocation} onChange={e => setEditModal({ ...editModal, pickupLocation: e.target.value })} placeholder="Pickup Location" style={{ flex: 1 }} />
                 </div>
                 <div className="row" style={{ marginBottom: 12 }}>
+                  <input value={editModal.bookingReferBy} onChange={e => setEditModal({ ...editModal, bookingReferBy: e.target.value })} placeholder="Refer By (Name)" style={{ flex: 1 }} />
+                  <input value={editModal.bookingReferralContact} onChange={e => setEditModal({ ...editModal, bookingReferralContact: e.target.value })} placeholder="Referral Contact" style={{ flex: 1 }} />
+                </div>
+                <div className="row" style={{ marginBottom: 12 }}>
                   <input type="date" value={editModal.date} onChange={e => setEditModal({ ...editModal, date: e.target.value })} style={{ flex: 1 }} />
                   <input value={editModal.pickupTime} onChange={e => setEditModal({ ...editModal, pickupTime: e.target.value })} placeholder="Time (e.g., 08:30 AM)" style={{ flex: 1 }} />
                   <select value={editModal.dropoffLocation} onChange={e => setEditModal({ ...editModal, dropoffLocation: e.target.value })} style={{ flex: 1 }}>
@@ -742,7 +774,16 @@ export default function Dashboard() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
             <h2 style={{ fontSize: '1.1rem', margin: 0 }}>📋 Upcoming Bookings</h2>
-            <button className="btn-sm primary" onClick={exportToExcel}>📥 Export to Excel</button>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <input
+                type="text"
+                placeholder="🔍 Search clients or drivers..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ minWidth: 260, borderRadius: 8, padding: '8px 16px' }}
+              />
+              <button className="btn-sm primary" onClick={exportToExcel}>📥 Export to Excel</button>
+            </div>
           </div>
           <div className="card" style={{ borderTop: '3px solid var(--emerald)', overflowX: 'auto' }}>
             <table>
@@ -758,7 +799,7 @@ export default function Dashboard() {
                 {upcomingBookings.map(b => (
                   <tr key={b.id}>
                     <td style={{ fontSize: '0.8rem', color: 'var(--cyan)' }}>{b.addedBy || 'Sys'}</td>
-                    <td>{b.clientName || '-'}</td>
+                    <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.bookingReferBy ? `Ref: ${b.bookingReferBy}` : ''}</span></td>
                     <td>{b.clientContact || '-'}</td>
                     <td>{b.date || '-'}</td>
                     <td>{b.pickupTime || '-'}</td>
@@ -829,7 +870,7 @@ export default function Dashboard() {
                       </span>
                     </td>
                     <td style={{ fontSize: '0.8rem', color: 'var(--cyan)' }}>{b.addedBy || 'Sys'}</td>
-                    <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.clientContact}</span></td>
+                    <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.clientContact}</span><br /><span style={{ fontSize: '0.8rem', color: 'var(--amber)' }}>{b.bookingReferBy ? `Ref: ${b.bookingReferBy}` : ''}</span></td>
                     <td>{b.date || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.pickupTime}</span></td>
                     <td style={{ fontSize: '0.85rem' }}>
                       🚗 {b.vehicle} | 📦 {b.package}<br />
@@ -841,9 +882,10 @@ export default function Dashboard() {
                     </td>
                     <td style={{ fontSize: '0.85rem' }}>
                       {b.driverName || 'No Driver'}<br />
-                      <span style={{ color: b.commissionReceived === 'Yes' ? 'var(--emerald)' : 'var(--amber)' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: b.commissionReceived === 'Yes' ? 'var(--emerald)' : 'var(--amber)', cursor: 'pointer', marginTop: 4 }}>
+                        <input type="checkbox" checked={b.commissionReceived === 'Yes'} onChange={() => handleToggleCommission(b.id, b.commissionReceived)} />
                         Comm: {b.commissionSAR || 0} ({b.commissionReceived === 'Yes' ? 'Received' : 'Pending'})
-                      </span>
+                      </label>
                     </td>
                     <td style={{ minWidth: 100 }}>
                       <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000', marginBottom: '5px', width: '100%' }} onClick={() => setEditModal(b)}>Edit</button>

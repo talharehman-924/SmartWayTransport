@@ -33,7 +33,7 @@ export default function Dashboard() {
     vehicle: '', package: '', adults: '', children: '',
     luggageSuitcase: '', luggageHandCarry: '', luggageCarton: '', luggageStroller: '', luggageWheelchair: '',
     paymentSAR: '', advanceSAR: '', driverName: '', driverContact: '', driverVehicle: '', driverRegNo: '', commission: '',
-    paymentMode: 'Cash', commissionReceived: 'No',
+    paymentMode: 'Cash', commissionReceived: 'No', bookingReferBy: '', bookingReferralContact: '',
   });
   const [saveMsg, setSaveMsg] = useState(false);
   const [assignModal, setAssignModal] = useState(null);
@@ -208,7 +208,8 @@ export default function Dashboard() {
       driverName: b.driverName, driverContact: b.driverContact,
       driverVehicle: b.driverVehicle, driverRegNo: b.driverRegNo,
       commissionSAR: Number(b.commission) || 0,
-      paymentMode: b.paymentMode || 'Cash',
+      paymentMode: b.paymentMode || 'Cash', commissionReceived: b.commissionReceived || 'No',
+      bookingReferBy: b.bookingReferBy || '', bookingReferralContact: b.bookingReferralContact || '',
     };
     try {
       const insertedId = await addBooking(bookingDataToSave);
@@ -220,6 +221,7 @@ export default function Dashboard() {
         vehicle: '', package: '', adults: '', children: '',
         luggageSuitcase: '', luggageHandCarry: '', luggageCarton: '', luggageStroller: '', luggageWheelchair: '',
         paymentSAR: '', advanceSAR: '', driverName: '', driverContact: '', driverVehicle: '', driverRegNo: '', commission: '',
+        paymentMode: 'Cash', commissionReceived: 'No', bookingReferBy: '', bookingReferralContact: '',
       });
       await loadData();
       setSaveMsg(true);
@@ -481,6 +483,10 @@ export default function Dashboard() {
                 <input value={booking.clientName} onChange={e => setBooking({ ...booking, clientName: e.target.value })} placeholder="Passenger Name" style={{ minWidth: 140 }} />
                 <input value={booking.clientContact} onChange={e => setBooking({ ...booking, clientContact: e.target.value })} placeholder="Passenger Contact" style={{ minWidth: 140 }} />
                 <input value={booking.pickupLocation} onChange={e => setBooking({ ...booking, pickupLocation: e.target.value })} placeholder="Passenger Location (Pickup)" style={{ minWidth: 200, flex: 1 }} />
+              </div>
+              <div className="row" style={{ marginTop: 12 }}>
+                <input value={booking.bookingReferBy} onChange={e => setBooking({ ...booking, bookingReferBy: e.target.value })} placeholder="Refer By (Name)" style={{ minWidth: 140 }} />
+                <input value={booking.bookingReferralContact} onChange={e => setBooking({ ...booking, bookingReferralContact: e.target.value })} placeholder="Referral Contact" style={{ minWidth: 140 }} />
               </div>
 
               <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>👥 Passengers & Luggage</p>

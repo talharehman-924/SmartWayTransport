@@ -201,8 +201,17 @@ export default function Dashboard() {
 
   async function handleAddBooking() {
     const b = booking;
-    if (!b.clientName || !b.clientContact || !b.date || !b.time || !b.vehicle || !b.package) {
-      alert('Client Name, Contact, Date, Time, Vehicle, Package are required.'); return;
+    const missing = [];
+    if (!b.clientName) missing.push("Passenger Name");
+    if (!b.clientContact) missing.push("Passenger Contact");
+    if (!b.date) missing.push("Date");
+    if (!b.time) missing.push("Time");
+    if (!b.vehicle) missing.push("Vehicle Type");
+    if (!b.package) missing.push("Package / Route");
+
+    if (missing.length > 0) {
+      alert('Please fill in the missing fields: \n- ' + missing.join('\n- '));
+      return;
     }
     const pickupTime = b.time + ' ' + b.ampm;
     const bookingDataToSave = {
@@ -618,7 +627,7 @@ export default function Dashboard() {
             </div>
             <div className="row" style={{ marginTop: 12 }}>
               <input type="date" value={booking.date} onChange={e => setBooking({ ...booking, date: e.target.value })} style={{ minWidth: 140 }} />
-              <input type="time" value={booking.time} onChange={e => setBooking({ ...booking, time: e.target.value })} style={{ minWidth: 140 }} />
+              <input type="text" placeholder="HH:MM" value={booking.time} onChange={e => setBooking({ ...booking, time: e.target.value })} style={{ minWidth: 140 }} />
               <select value={booking.ampm} onChange={e => setBooking({ ...booking, ampm: e.target.value })} style={{ width: 90 }}>
                 <option value="AM">AM</option>
                 <option value="PM">PM</option>

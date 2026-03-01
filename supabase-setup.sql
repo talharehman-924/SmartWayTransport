@@ -102,6 +102,8 @@ CREATE POLICY "drivers_insert" ON drivers FOR INSERT TO authenticated, anon WITH
 -- ▸ bookings
 CREATE POLICY "bookings_select" ON bookings FOR SELECT TO authenticated, anon USING (true);
 CREATE POLICY "bookings_insert" ON bookings FOR INSERT TO authenticated, anon WITH CHECK (true);
+CREATE POLICY "bookings_update" ON bookings FOR UPDATE TO authenticated, anon USING (true) WITH CHECK (true);
+CREATE POLICY "bookings_delete" ON bookings FOR DELETE TO authenticated, anon USING (true);
 
 -- ── Indexes ──
 CREATE INDEX idx_users_id        ON users(id);

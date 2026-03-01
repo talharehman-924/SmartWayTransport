@@ -801,7 +801,7 @@ export default function Dashboard() {
               <tbody>
                 {upcomingBookings.map(b => (
                   <tr key={b.id}>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--cyan)', textTransform: 'capitalize', fontWeight: 'bold' }}>{(b.addedBy || 'Sys').split('@')[0]}</td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--cyan)', textTransform: 'capitalize', fontWeight: 'bold' }}>{(b.addedBy || 'Admin').split('@')[0]}</td>
                     <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.bookingReferBy ? `Ref: ${b.bookingReferBy}` : ''}</span></td>
                     <td>{b.clientContact || '-'}</td>
                     <td>{b.date || '-'}</td>
@@ -872,7 +872,7 @@ export default function Dashboard() {
                         {b.status.toUpperCase()}
                       </span>
                     </td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--cyan)', textTransform: 'capitalize', fontWeight: 'bold' }}>{(b.addedBy || 'Sys').split('@')[0]}</td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--cyan)', textTransform: 'capitalize', fontWeight: 'bold' }}>{(b.addedBy || 'Admin').split('@')[0]}</td>
                     <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.clientContact}</span><br /><span style={{ fontSize: '0.8rem', color: 'var(--amber)' }}>{b.bookingReferBy ? `Ref: ${b.bookingReferBy}` : ''}</span></td>
                     <td>{b.date || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.pickupTime}</span></td>
                     <td style={{ fontSize: '0.85rem' }}>

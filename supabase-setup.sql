@@ -77,6 +77,16 @@ ALTER TABLE config     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE drivers    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bookings   ENABLE ROW LEVEL SECURITY;
 
+-- ── 6. Driver Payments ──
+CREATE TABLE driver_payments (
+    id SERIAL PRIMARY KEY,
+    driver_name TEXT,
+    amount NUMERIC NOT NULL CHECK (amount > 0),
+    payment_method TEXT CHECK (payment_method IN ('Cash', 'Online')),
+    recorded_by TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ══════════════════════════════════════
 -- RLS POLICIES
 -- ══════════════════════════════════════
@@ -104,6 +114,10 @@ CREATE POLICY "bookings_select" ON bookings FOR SELECT TO authenticated, anon US
 CREATE POLICY "bookings_insert" ON bookings FOR INSERT TO authenticated, anon WITH CHECK (true);
 CREATE POLICY "bookings_update" ON bookings FOR UPDATE TO authenticated, anon USING (true) WITH CHECK (true);
 CREATE POLICY "bookings_delete" ON bookings FOR DELETE TO authenticated, anon USING (true);
+
+-- ▸ driver_payments
+CREATE POLICY "driver_payments_select" ON driver_payments FOR SELECT TO authenticated, anon USING (true);
+CREATE POLICY "driver_payments_insert" ON driver_payments FOR INSERT TO authenticated, anon WITH CHECK (true);
 
 -- ── Indexes ──
 CREATE INDEX idx_users_id        ON users(id);

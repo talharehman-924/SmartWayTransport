@@ -6,7 +6,8 @@ import {
   addVehicle, addPackage, addDriver, addBooking, updateBookingDriver,
   getPendingUsers, approveUser, rejectUser,
   updatePassword, isPasswordStrong, memberSignOut,
-  updateBooking, updateBookingStatus, deleteBooking, toggleCommissionStatus
+  updateBooking, updateBookingStatus, deleteBooking, toggleCommissionStatus,
+  getDriverBalances, recordDriverPayment
 } from '../../lib/db';
 import { isSupabaseReady } from '../../lib/supabase';
 import VoucherTemplate from '../../components/VoucherTemplate';
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [driversList, setDriversList] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
+  const [driverBalances, setDriverBalances] = useState([]);
   const [showChangePwd, setShowChangePwd] = useState(false);
   const [pwdMsg, setPwdMsg] = useState({ text: '', color: '' });
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,11 +115,14 @@ export default function Dashboard() {
   const loadData = useCallback(async () => {
     if (!isSupabaseReady()) return;
     try {
-      const [v, p, b, dList] = await Promise.all([getVehicles(), getPackages(), getBookings(), getDrivers()]);
+      const [v, p, b, dList, bal] = await Promise.all([
+        getVehicles(), getPackages(), getBookings(), getDrivers(), getDriverBalances()
+      ]);
       setVehicles(v);
       setPackages(p);
       setBookings(b);
       setDriversList(dList);
+      setDriverBalances(bal);
       if (role === 'admin') {
         const pending = await getPendingUsers();
         setPendingUsers(pending);
@@ -896,6 +901,61 @@ export default function Dashboard() {
                   </tr>
                 ))}
                 {pastBookings.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No past bookings.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Driver Settlements */}
+        <section style={{ marginBottom: 36, position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
+            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>💰 Driver Settlements & Balances</h2>
+          </div>
+          <div className="card" style={{ borderTop: '3px solid var(--purple)', overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Driver Name</th>
+                  <th>Total Pending</th>
+                  <th>Total Paid</th>
+                  <th>Net Owed (SAR)</th>
+                  <th>Record Payment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {driverBalances.map((bal, idx) => (
+                  <tr key={idx}>
+                    <td style={{ fontWeight: 'bold' }}>{bal.driverName}</td>
+                    <td style={{ color: 'var(--amber)' }}>{bal.totalPending}</td>
+                    <td style={{ color: 'var(--emerald)' }}>{bal.totalPaid}</td>
+                    <td style={{ color: bal.netOwed > 0 ? '#ff4d4d' : 'var(--emerald)', fontWeight: 'bold' }}>
+                      {bal.netOwed} SAR
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input type="number" id={`payInput_${idx}`} placeholder="SAR" style={{ width: 80, padding: 6 }} min="1" max={bal.netOwed} />
+                        <button className="btn-sm primary" onClick={async () => {
+                          const amt = Number(document.getElementById(`payInput_${idx}`).value);
+                          if (!amt || amt <= 0) { alert('Enter a valid amount.'); return; }
+                          if (amt > bal.netOwed) { alert(`Driver only owes ${bal.netOwed} SAR.`); return; }
+                          if (!window.confirm(`Record ${amt} SAR payment from ${bal.driverName}?`)) return;
+
+                          try {
+                            await recordDriverPayment(bal.driverName, amt, 'Cash', user);
+                            document.getElementById(`payInput_${idx}`).value = '';
+                            loadData();
+                            alert('Payment recorded successfully!');
+                          } catch (err) {
+                            alert(err.message);
+                          }
+                        }}>
+                          Record
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {driverBalances.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No pending driver settlements.</td></tr>}
               </tbody>
             </table>
           </div>

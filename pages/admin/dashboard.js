@@ -274,17 +274,25 @@ export default function Dashboard() {
 
   // Summary calculations
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const currentMonth = now.toISOString().slice(0, 7);
-  const weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
-  const weekStartStr = weekStart.toISOString().slice(0, 10);
-  const weekBookings = bookings.filter(b => b.date >= weekStartStr && b.date <= today);
-  const monthBookings = bookings.filter(b => {
-    const d = b.createdAt ? b.createdAt.slice(0, 7) : (b.date ? b.date.slice(0, 7) : '');
-    return d === currentMonth;
-  });
+  const getLocalISODate = (d) => new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
+
+  const currentMonth = getLocalISODate(now).slice(0, 7);
+
+  const weekStart = new Date(now);
+  const day = now.getDay() === 0 ? 7 : now.getDay(); // Treat Sunday (0) as day 7
+  weekStart.setDate(now.getDate() - day + 1);
+  const weekStartStr = getLocalISODate(weekStart);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const weekEndStr = getLocalISODate(weekEnd);
+
+  const weekBookings = bookings.filter(b => b.date && b.date >= weekStartStr && b.date <= weekEndStr);
+  const monthBookings = bookings.filter(b => b.date && b.date.slice(0, 7) === currentMonth);
+
   const weekRev = weekBookings.reduce((s, b) => s + (Number(b.paymentSAR) || 0), 0);
   const monthRev = monthBookings.reduce((s, b) => s + (Number(b.paymentSAR) || 0), 0);
+  const totalRev = bookings.reduce((s, b) => s + (Number(b.paymentSAR) || 0), 0);
 
   const sortedBookings = [...bookings].sort((a, b) => (a.date + (a.pickupTime || '')).localeCompare(b.date + (b.pickupTime || '')));
 
@@ -344,6 +352,16 @@ export default function Dashboard() {
               <div style={{ fontSize: '2.5rem', fontWeight: 700 }}>{monthBookings.length}</div>
               <div style={{ fontSize: '0.9rem', color: 'var(--muted)', marginTop: 6 }}>bookings</div>
               <div style={{ fontSize: '1rem', color: 'var(--emerald)', fontWeight: 700, marginTop: 4 }}>{monthRev} SAR</div>
+            </div>
+            <div style={{
+              padding: 28, borderRadius: 16, minWidth: 220, flex: 1,
+              background: 'linear-gradient(135deg, rgba(236,72,153,0.2), rgba(20,20,40,0.95))',
+              borderLeft: '4px solid var(--pink)',
+            }}>
+              <h3 style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--pink)', marginBottom: 12, opacity: 0.8 }}>🌍 Total Bookings</h3>
+              <div style={{ fontSize: '2.5rem', fontWeight: 700 }}>{bookings.length}</div>
+              <div style={{ fontSize: '0.9rem', color: 'var(--muted)', marginTop: 6 }}>bookings via database</div>
+              <div style={{ fontSize: '1rem', color: 'var(--pink)', fontWeight: 700, marginTop: 4 }}>{totalRev} SAR</div>
             </div>
           </div>
         </section>

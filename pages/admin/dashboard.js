@@ -344,12 +344,8 @@ export default function Dashboard() {
 
   const sortedBookings = [...bookings].sort((a, b) => (a.date + (a.pickupTime || '')).localeCompare(b.date + (b.pickupTime || '')));
 
-  // Filter out completed bookings from the UI array
-  const upcomingBookings = sortedBookings.filter(b => {
-    // If completed manually, hide it
-    if (b.status === 'completed' || b.status === 'cancelled') return false;
-
-    // Feature: hide past bookings if driver is assigned and time is past 
+  const isPastBooking = (b) => {
+    if (b.status === 'completed' || b.status === 'cancelled') return true;
     if (b.driverName && b.date) {
       // The pickupTime comes in like "10:30 AM" or "16:55 PM"
       let dtStr = b.date;
@@ -372,14 +368,14 @@ export default function Dashboard() {
       } else {
         dtStr += 'T23:59:59';
       }
-
       const dt = new Date(dtStr);
-      if (dt < now) return false;
+      if (dt < now) return true;
     }
-    return true;
-  });
+    return false;
+  };
 
-  const pastBookings = sortedBookings.filter(b => b.status === 'completed' || b.status === 'cancelled');
+  const upcomingBookings = sortedBookings.filter(b => !isPastBooking(b));
+  const pastBookings = sortedBookings.filter(b => isPastBooking(b));
 
   if (!user) return null;
 
@@ -788,7 +784,7 @@ export default function Dashboard() {
                         referByName: b.referByName || '',
                         referralContact: b.referralContact || '',
                         commissionSAR: b.commissionSAR || ''
-                      })}>Assign Driver</button>
+                      })}>{b.driverName ? 'Update Driver' : 'Assign Driver'}</button>
                       <br />
                       {b.driverName && (
                         <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={() => {

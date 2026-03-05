@@ -254,7 +254,7 @@ export default function DriverVoucherTemplate({ driverData, pdfRef }) {
                     </div>
                     <div className="pdf-grid-item">
                         <label>Drop-off Location</label>
-                        <div className="pdf-fake-field">{driverData.dropoffLocation || driverData.package || '-'}</div>
+                        <div className="pdf-fake-field">{driverData.dropoffLocation || '-'}</div>
                     </div>
                 </div>
 

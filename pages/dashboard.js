@@ -492,14 +492,32 @@ export default function Dashboard() {
             <div className="card" style={{ borderTop: '3px solid var(--cyan)' }}>
               <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12 }}>👤 Passenger Details</p>
               <div className="row">
-                <input value={booking.clientName} onChange={e => setBooking({ ...booking, clientName: e.target.value })} placeholder="Passenger Name" style={{ minWidth: 140 }} />
-                <input value={booking.clientContact} onChange={e => setBooking({ ...booking, clientContact: e.target.value })} placeholder="Passenger Contact" style={{ minWidth: 140 }} />
-                <input value={booking.nationality} onChange={e => setBooking({ ...booking, nationality: e.target.value })} placeholder="Nationality (Country)" style={{ minWidth: 140 }} />
-                <input value={booking.pickupLocation} onChange={e => setBooking({ ...booking, pickupLocation: e.target.value })} placeholder="Passenger Location (Pickup)" style={{ minWidth: 200, flex: 1 }} />
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Passenger Name</label>
+                  <input value={booking.clientName} onChange={e => setBooking({ ...booking, clientName: e.target.value })} placeholder="Enter name" style={{ width: '100%' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Passenger Contact</label>
+                  <input value={booking.clientContact} onChange={e => setBooking({ ...booking, clientContact: e.target.value })} placeholder="Enter contact" style={{ width: '100%' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nationality (Country)</label>
+                  <input value={booking.nationality} onChange={e => setBooking({ ...booking, nationality: e.target.value })} placeholder="e.g. Pakistan" style={{ width: '100%' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: '#f59e0b', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>📍 Pickup Location</label>
+                  <input value={booking.pickupLocation} onChange={e => setBooking({ ...booking, pickupLocation: e.target.value })} placeholder="e.g. Makkah Hotel" style={{ width: '100%' }} />
+                </div>
               </div>
               <div className="row" style={{ marginTop: 12 }}>
-                <input value={booking.bookingReferBy} onChange={e => setBooking({ ...booking, bookingReferBy: e.target.value })} placeholder="Refer By (Name)" style={{ minWidth: 140 }} />
-                <input value={booking.bookingReferralContact} onChange={e => setBooking({ ...booking, bookingReferralContact: e.target.value })} placeholder="Referral Contact" style={{ minWidth: 140 }} />
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Refer By (Name)</label>
+                  <input value={booking.bookingReferBy} onChange={e => setBooking({ ...booking, bookingReferBy: e.target.value })} placeholder="Referrer name" style={{ width: '100%' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Referral Contact</label>
+                  <input value={booking.bookingReferralContact} onChange={e => setBooking({ ...booking, bookingReferralContact: e.target.value })} placeholder="Referrer contact" style={{ width: '100%' }} />
+                </div>
               </div>
 
               <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>👥 Passengers & Luggage</p>
@@ -518,38 +536,60 @@ export default function Dashboard() {
 
               <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>🚗 Vehicle & Routes Section</p>
               <div className="row">
-                <input list="memberVehicleList" placeholder="-- Vehicle Type --" value={booking.vehicle} onChange={e => setBooking({ ...booking, vehicle: e.target.value })} style={{ minWidth: 160, flex: 1 }} />
-                <datalist id="memberVehicleList">
-                  {vehicles.map(v => <option key={v} value={v} />)}
-                </datalist>
-
-                <input list="memberPackageList" placeholder="-- Package / Route (Pickup to Drop-off) --" value={booking.package} onChange={e => setBooking({ ...booking, package: e.target.value })} style={{ minWidth: 160, flex: 1 }} />
-                <datalist id="memberPackageList">
-                  {packages.map(p => <option key={p} value={p} />)}
-                </datalist>
-
-                <input list="memberDropoffList" placeholder="-- Drop-off Location --" value={booking.dropoffLocation} onChange={e => setBooking({ ...booking, dropoffLocation: e.target.value })} style={{ minWidth: 160, flex: 1 }} />
-                <datalist id="memberDropoffList">
-                  <option value="Kiswa Factory, Mecca Museum, Sulah Hudabia" />
-                  <option value="Jeddah Airport Terminal 1" />
-                  <option value="Jeddah Airport Terminal Hajj" />
-                  <option value="Jeddah Airport Terminal North" />
-                  <option value="Makkah Hotel" />
-                  <option value="Madinah Hotel" />
-                  <option value="Other" />
-                </datalist>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Vehicle Type</label>
+                  <input list="memberVehicleList" placeholder="-- Select Vehicle --" value={booking.vehicle} onChange={e => setBooking({ ...booking, vehicle: e.target.value })} style={{ width: '100%' }} />
+                  <datalist id="memberVehicleList">
+                    {vehicles.map(v => <option key={v} value={v} />)}
+                  </datalist>
+                </div>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Package / Route</label>
+                  <input list="memberPackageList" placeholder="-- Select Package --" value={booking.package} onChange={e => setBooking({ ...booking, package: e.target.value })} style={{ width: '100%' }} />
+                  <datalist id="memberPackageList">
+                    {packages.map(p => <option key={p} value={p} />)}
+                  </datalist>
+                </div>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: '#f59e0b', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>📍 Drop-off Location</label>
+                  <input list="memberDropoffList" placeholder="-- Select/Type Location --" value={booking.dropoffLocation} onChange={e => setBooking({ ...booking, dropoffLocation: e.target.value })} style={{ width: '100%' }} />
+                  <datalist id="memberDropoffList">
+                    <option value="Kiswa Factory, Mecca Museum, Sulah Hudabia" />
+                    <option value="Jeddah Airport Terminal 1" />
+                    <option value="Jeddah Airport Terminal Hajj" />
+                    <option value="Jeddah Airport Terminal North" />
+                    <option value="Makkah Hotel" />
+                    <option value="Madinah Hotel" />
+                    <option value="Other" />
+                  </datalist>
+                </div>
               </div>
               <div className="row" style={{ marginTop: 12 }}>
-                <input type="date" value={booking.date} onChange={e => setBooking({ ...booking, date: e.target.value })} style={{ minWidth: 140 }} />
-                <input type="text" placeholder="HH:MM" value={booking.time} onChange={e => setBooking({ ...booking, time: e.target.value })} style={{ minWidth: 140 }} />
-                <select value={booking.ampm} onChange={e => setBooking({ ...booking, ampm: e.target.value })} style={{ width: 90 }}>
-                  <option value="AM">AM</option>
-                  <option value="PM">PM</option>
-                </select>
+                <div style={{ minWidth: 140 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</label>
+                  <input type="date" value={booking.date} onChange={e => setBooking({ ...booking, date: e.target.value })} style={{ width: '100%' }} />
+                </div>
+                <div style={{ minWidth: 140 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Time (HH:MM)</label>
+                  <input type="text" placeholder="e.g. 08:30" value={booking.time} onChange={e => setBooking({ ...booking, time: e.target.value })} style={{ width: '100%' }} />
+                </div>
+                <div style={{ width: 90 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>AM/PM</label>
+                  <select value={booking.ampm} onChange={e => setBooking({ ...booking, ampm: e.target.value })} style={{ width: '100%' }}>
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
               </div>
               <div className="row" style={{ marginTop: 12 }}>
-                <input value={booking.specialRequest} onChange={e => setBooking({ ...booking, specialRequest: e.target.value })} placeholder="Special Request" style={{ minWidth: 200, flex: 1 }} />
-                <input value={booking.totalDuration} onChange={e => setBooking({ ...booking, totalDuration: e.target.value })} placeholder="Total Duration (e.g. 2 Days)" style={{ minWidth: 160 }} />
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Special Request</label>
+                  <input value={booking.specialRequest} onChange={e => setBooking({ ...booking, specialRequest: e.target.value })} placeholder="Any special request" style={{ width: '100%' }} />
+                </div>
+                <div style={{ minWidth: 160 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--muted)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Duration</label>
+                  <input value={booking.totalDuration} onChange={e => setBooking({ ...booking, totalDuration: e.target.value })} placeholder="e.g. 2 Days" style={{ width: '100%' }} />
+                </div>
               </div>
 
               <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>💵 Financials (SAR)</p>
@@ -684,7 +724,7 @@ export default function Dashboard() {
                         {b.driverName && (
                           <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={() => {
                             setLastSavedBooking(b);
-                            setTimeout(downloadDriverVoucher, 100);
+                            setTimeout(downloadDriverVoucher, 500);
                           }}> Driver PDF</button>
                         )}
                       </td>

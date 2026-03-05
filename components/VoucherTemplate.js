@@ -220,10 +220,14 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
           </div>
         </div>
 
-        <div className="pdf-grid cols-1">
+        <div className="pdf-grid cols-2">
           <div className="pdf-grid-item">
-            <label>Drop Off Location / Route Package</label>
-            <div className="pdf-fake-field">{bookingData.dropoffLocation || bookingData.package || '-'}</div>
+            <label>Drop Off Location</label>
+            <div className="pdf-fake-field">{bookingData.dropoffLocation || '-'}</div>
+          </div>
+          <div className="pdf-grid-item">
+            <label>Package / Route</label>
+            <div className="pdf-fake-field">{bookingData.package || '-'}</div>
           </div>
         </div>
 

@@ -65,7 +65,15 @@ export default function LoginPage() {
       const user = result.user;
       const userData = await getUserData(user.id);
 
-      if (!userData) throw new Error('Account not found in system. Please sign up first.');
+      // If user authenticated successfully but has no users table row,
+      // it means they confirmed their email — create the pending row now
+      if (!userData) {
+        await setUser(user.id, user.email, 'member', 'pending');
+        try { await seedDefaults(); } catch (e) { }
+        setMsg({ text: 'Your account is pending admin approval. Please wait.', type: 'warning' });
+        setLoading(false);
+        return;
+      }
       if (userData.status === 'pending') {
         setMsg({ text: 'Your account is pending admin approval. Please wait.', type: 'warning' });
         setLoading(false);
@@ -98,11 +106,22 @@ export default function LoginPage() {
     try {
       const result = await memberSignUp(email, password);
       if (result.user) {
-        // Register as pending member
-        await setUser(result.user.id, result.user.email, 'member', 'pending');
-        // Seed defaults if first data
-        try { await seedDefaults(); } catch (e) { }
-        setMsg({ text: 'Account created! Please wait for admin approval before logging in.', type: 'warning' });
+        // Check if the user already exists (duplicate signup attempt)
+        if (result.user.identities && result.user.identities.length === 0) {
+          setMsg({ text: 'An account with this email already exists. Please login instead.', type: 'error' });
+          setLoading(false);
+          return;
+        }
+        // If session exists, user is auto-confirmed — safe to insert into users table
+        if (result.session) {
+          await setUser(result.user.id, result.user.email, 'member', 'pending');
+          try { await seedDefaults(); } catch (e) { }
+          setMsg({ text: 'Account created! Please wait for admin approval before logging in.', type: 'warning' });
+        } else {
+          // Email confirmation is required — user record not yet in auth.users
+          // The users table row will be created when they first login after confirming
+          setMsg({ text: 'Check your email for the confirmation link. After confirming, wait for admin approval before logging in.', type: 'warning' });
+        }
       } else {
         setMsg({ text: 'Check your email for confirmation link, then wait for admin approval.', type: 'warning' });
       }

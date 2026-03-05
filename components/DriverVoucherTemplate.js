@@ -257,6 +257,20 @@ export default function DriverVoucherTemplate({ driverData, pdfRef }) {
                         <div className="pdf-fake-field">{driverData.dropoffLocation || '-'}</div>
                     </div>
                 </div>
+                <div className="pdf-grid cols-1">
+                    <div className="pdf-grid-item">
+                        <label>Package / Route</label>
+                        <div className="pdf-fake-field" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                            {(driverData.package || '-').split(', ').filter(Boolean).map((pkg, i) => (
+                                <span key={i} style={{
+                                    background: '#e0f2fe', color: '#0369a1', padding: '3px 10px',
+                                    borderRadius: '4px', fontSize: '12px', fontWeight: 600,
+                                    border: '1px solid #bae6fd',
+                                }}>{pkg}</span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
 
                 <div className="pdf-grid">
                     <div className="pdf-grid-item">

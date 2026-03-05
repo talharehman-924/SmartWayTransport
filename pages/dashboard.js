@@ -47,18 +47,35 @@ export default function Dashboard() {
       const { jsPDF } = await import('jspdf');
       const { default: html2canvas } = await import('html2canvas');
 
-      const canvas = await html2canvas(pdfRef.current, {
+      // Clone the hidden voucher into a temporary visible container for mobile compatibility
+      const clone = pdfRef.current.cloneNode(true);
+      clone.style.position = 'fixed';
+      clone.style.top = '0';
+      clone.style.left = '0';
+      clone.style.width = '900px';
+      clone.style.zIndex = '-9999';
+      clone.style.opacity = '1';
+      clone.style.pointerEvents = 'none';
+      document.body.appendChild(clone);
+
+      // Wait for browser to render
+      await new Promise(r => setTimeout(r, 300));
+
+      const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        scrollY: 0,
+        scrollX: 0,
+        windowWidth: 960,
       });
 
-      // Compress to JPEG to drastically reduce file size instead of pure raw PNG
+      document.body.removeChild(clone);
+
       const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const imgW = canvas.width;
       const imgH = canvas.height;
 
-      // Create PDF perfectly sized to the canvas pixels
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'px',
@@ -80,18 +97,35 @@ export default function Dashboard() {
       const { jsPDF } = await import('jspdf');
       const { default: html2canvas } = await import('html2canvas');
 
-      const canvas = await html2canvas(driverPdfRef.current, {
+      // Clone the hidden voucher into a temporary visible container for mobile compatibility
+      const clone = driverPdfRef.current.cloneNode(true);
+      clone.style.position = 'fixed';
+      clone.style.top = '0';
+      clone.style.left = '0';
+      clone.style.width = '900px';
+      clone.style.zIndex = '-9999';
+      clone.style.opacity = '1';
+      clone.style.pointerEvents = 'none';
+      document.body.appendChild(clone);
+
+      // Wait for browser to render
+      await new Promise(r => setTimeout(r, 300));
+
+      const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        scrollY: 0,
+        scrollX: 0,
+        windowWidth: 960,
       });
 
-      // Compress to JPEG to drastically reduce file size instead of pure raw PNG
+      document.body.removeChild(clone);
+
       const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const imgW = canvas.width;
       const imgH = canvas.height;
 
-      // Create PDF perfectly sized to the canvas pixels
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'px',
@@ -544,11 +578,73 @@ export default function Dashboard() {
                   </datalist>
                 </div>
                 <div style={{ flex: 1, minWidth: 160 }}>
-                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Package / Route</label>
-                  <input list="memberPackageList" placeholder="-- Select Package --" value={booking.package} onChange={e => setBooking({ ...booking, package: e.target.value })} style={{ width: '100%' }} />
-                  <datalist id="memberPackageList">
-                    {packages.map(p => <option key={p} value={p} />)}
-                  </datalist>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Package / Route (tap to select)</label>
+                  {/* Always-visible package chips - tap to toggle */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                    {packages.map(p => {
+                      const selected = (booking.package || '').split(', ').filter(Boolean).includes(p);
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => {
+                            const current = (booking.package || '').split(', ').filter(Boolean);
+                            const updated = selected ? current.filter(x => x !== p) : [...current, p];
+                            setBooking({ ...booking, package: updated.join(', ') });
+                          }}
+                          style={{
+                            padding: '10px 16px', borderRadius: 20, cursor: 'pointer',
+                            fontSize: '0.85rem', fontWeight: 600, border: 'none',
+                            background: selected ? 'var(--cyan)' : 'rgba(255,255,255,0.08)',
+                            color: selected ? '#000' : 'var(--muted)',
+                            outline: selected ? '2px solid var(--cyan)' : '1px solid rgba(255,255,255,0.15)',
+                            transition: 'all 0.15s ease',
+                            WebkitTapHighlightColor: 'transparent',
+                            minHeight: 40,
+                          }}
+                        >{selected ? '✓ ' : ''}{p}</button>
+                      );
+                    })}
+                  </div>
+                  {/* Custom route input */}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      type="text"
+                      placeholder="Type custom route & press +"
+                      value={booking._customPkg || ''}
+                      onChange={(e) => setBooking({ ...booking, _customPkg: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && (booking._customPkg || '').trim()) {
+                          e.preventDefault();
+                          const val = booking._customPkg.trim();
+                          const current = (booking.package || '').split(', ').filter(Boolean);
+                          if (!current.includes(val)) current.push(val);
+                          setBooking({ ...booking, package: current.join(', '), _customPkg: '' });
+                        }
+                      }}
+                      style={{ flex: 1, padding: '10px 12px', fontSize: '0.85rem', borderRadius: 8 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = (booking._customPkg || '').trim();
+                        if (!val) return;
+                        const current = (booking.package || '').split(', ').filter(Boolean);
+                        if (!current.includes(val)) current.push(val);
+                        setBooking({ ...booking, package: current.join(', '), _customPkg: '' });
+                      }}
+                      style={{
+                        padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                        background: 'var(--cyan)', color: '#000', fontWeight: 700, fontSize: '1rem',
+                        minWidth: 44, minHeight: 40,
+                      }}
+                    >+</button>
+                  </div>
+                  {booking.package && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--emerald)', marginTop: 6 }}>
+                      Selected: {booking.package}
+                    </div>
+                  )}
                 </div>
                 <div style={{ flex: 1, minWidth: 160 }}>
                   <label style={{ display: 'block', fontSize: '0.7rem', color: '#f59e0b', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>📍 Drop-off Location</label>

@@ -190,6 +190,44 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
             <div className="pdf-fake-field">{bookingData.nationality || '-'}</div>
           </div>
         </div>
+        <div className="pdf-grid" style={{ marginTop: 12 }}>
+          <div className="pdf-grid-item">
+            <label>Adults</label>
+            <div className="pdf-fake-field">{bookingData.adults || 0}</div>
+          </div>
+          <div className="pdf-grid-item">
+            <label>Children</label>
+            <div className="pdf-fake-field">{bookingData.children || 0}</div>
+          </div>
+          <div className="pdf-grid-item">
+            <label>Total Passengers</label>
+            <div className="pdf-fake-field">{(Number(bookingData.adults) || 0) + (Number(bookingData.children) || 0)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="pdf-section">Luggage Details</div>
+      <div style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', marginTop: '12px', zIndex: 1, position: 'relative', background: 'rgba(255,255,255,0.7)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <thead>
+            <tr>
+              <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>Suitcase</th>
+              <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>Hand Carry</th>
+              <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>Carton</th>
+              <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>Stroller</th>
+              <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>Wheelchair</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, fontSize: '15px', color: '#334155' }}>{bookingData.luggageSuitcase || 0}</td>
+              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, fontSize: '15px', color: '#334155' }}>{bookingData.luggageHandCarry || 0}</td>
+              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, fontSize: '15px', color: '#334155' }}>{bookingData.luggageCarton || 0}</td>
+              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, fontSize: '15px', color: '#334155' }}>{bookingData.luggageStroller || 0}</td>
+              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, fontSize: '15px', color: '#334155' }}>{bookingData.luggageWheelchair || 0}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <div className="pdf-section">Vehicle & Routes</div>
@@ -227,7 +265,15 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
           </div>
           <div className="pdf-grid-item">
             <label>Package / Route</label>
-            <div className="pdf-fake-field">{bookingData.package || '-'}</div>
+            <div className="pdf-fake-field" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+              {(bookingData.package || '-').split(', ').filter(Boolean).map((pkg, i) => (
+                <span key={i} style={{
+                  background: '#e0f2fe', color: '#0369a1', padding: '3px 10px',
+                  borderRadius: '4px', fontSize: '12px', fontWeight: 600,
+                  border: '1px solid #bae6fd',
+                }}>{pkg}</span>
+              ))}
+            </div>
           </div>
         </div>
 

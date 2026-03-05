@@ -187,7 +187,7 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
           </div>
           <div className="pdf-grid-item">
             <label>Nationality</label>
-            <div className="pdf-fake-field">Any</div>
+            <div className="pdf-fake-field">{bookingData.nationality || '-'}</div>
           </div>
         </div>
       </div>

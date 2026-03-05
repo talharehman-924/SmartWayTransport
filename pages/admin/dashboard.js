@@ -33,7 +33,7 @@ export default function Dashboard() {
   const [newPackage, setNewPackage] = useState('');
   const [driver, setDriver] = useState({ name: '', contact: '', vehicleName: '', vehicleNumber: '', shirqaName: '', referByName: '', referralContact: '' });
   const [booking, setBooking] = useState({
-    clientName: '', clientContact: '', pickupLocation: '', dropoffLocation: '', specialRequest: '', totalDuration: '',
+    clientName: '', clientContact: '', nationality: '', pickupLocation: '', dropoffLocation: '', specialRequest: '', totalDuration: '',
     date: '', time: '', ampm: 'AM',
     vehicle: '', package: '', adults: '', children: '',
     luggageSuitcase: '', luggageHandCarry: '', luggageCarton: '', luggageStroller: '', luggageWheelchair: '',
@@ -219,7 +219,7 @@ export default function Dashboard() {
     }
     const pickupTime = b.time + ' ' + b.ampm;
     const bookingDataToSave = {
-      clientName: b.clientName, clientContact: b.clientContact,
+      clientName: b.clientName, clientContact: b.clientContact, nationality: b.nationality || '',
       pickupLocation: b.pickupLocation, dropoffLocation: b.dropoffLocation,
       specialRequest: b.specialRequest, totalDuration: b.totalDuration,
       date: b.date, pickupTime, vehicle: b.vehicle, package: b.package,
@@ -240,7 +240,7 @@ export default function Dashboard() {
       const bookingWithId = { ...bookingDataToSave, id: insertedId };
       setLastSavedBooking(bookingWithId);
       setBooking({
-        clientName: '', clientContact: '', pickupLocation: '', dropoffLocation: '', specialRequest: '', totalDuration: '',
+        clientName: '', clientContact: '', nationality: '', pickupLocation: '', dropoffLocation: '', specialRequest: '', totalDuration: '',
         date: '', time: '', ampm: 'AM',
         vehicle: '', package: '', adults: '', children: '',
         luggageSuitcase: '', luggageHandCarry: '', luggageCarton: '', luggageStroller: '', luggageWheelchair: '',
@@ -678,6 +678,7 @@ export default function Dashboard() {
             <div className="row">
               <input value={booking.clientName} onChange={e => setBooking({ ...booking, clientName: e.target.value })} placeholder="Passenger Name" style={{ minWidth: 140 }} />
               <input value={booking.clientContact} onChange={e => setBooking({ ...booking, clientContact: e.target.value })} placeholder="Passenger Contact" style={{ minWidth: 140 }} />
+              <input value={booking.nationality} onChange={e => setBooking({ ...booking, nationality: e.target.value })} placeholder="Nationality (Country)" style={{ minWidth: 140 }} />
               <input value={booking.pickupLocation} onChange={e => setBooking({ ...booking, pickupLocation: e.target.value })} placeholder="Passenger Location (Pickup)" style={{ minWidth: 200, flex: 1 }} />
             </div>
             <div className="row" style={{ marginTop: 12 }}>

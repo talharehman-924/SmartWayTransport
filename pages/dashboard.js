@@ -10,9 +10,17 @@ import {
 import { isSupabaseReady } from '../lib/supabase';
 import VoucherTemplate from '../components/VoucherTemplate';
 import DriverVoucherTemplate from '../components/DriverVoucherTemplate';
+import {
+  LayoutDashboard, Car, Package, Users, Settings, LogOut, CheckCircle,
+  XCircle, Search, Calendar, DollarSign, Clock, Download, Plus, FileText,
+  FileDown, ShieldCheck, ArrowRightLeft, UserCheck, AlertCircle, Edit, Trash2, Key, MapPin, Briefcase,
+  Sun, Moon
+} from 'lucide-react';
+import { useTheme } from '../lib/ThemeContext';
 
 export default function Dashboard() {
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const [user, setUser] = useState('');
   const [role, setRole] = useState('');
   const [vehicles, setVehicles] = useState([]);
@@ -345,35 +353,45 @@ export default function Dashboard() {
       <DriverVoucherTemplate driverData={lastSavedBooking} pdfRef={driverPdfRef} />
 
       {/* Header */}
-      <header style={{
-        background: 'linear-gradient(90deg, rgba(99,102,241,0.15), rgba(168,85,247,0.15), rgba(236,72,153,0.15))',
-        borderBottom: '1px solid rgba(168,85,247,0.3)',
-        padding: '16px 24px',
+      <header className="animate-enter" style={{
+        background: 'var(--bg-header)',
+        borderBottom: '1px solid var(--border)',
+        padding: '14px 24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
-        backdropFilter: 'blur(10px)',
+        backdropFilter: 'blur(12px)',
+        position: 'sticky', top: 0, zIndex: 50,
+        boxShadow: 'var(--shadow-header)'
       }}>
-        <span style={{ fontSize: '1.2rem', fontWeight: 700, background: 'linear-gradient(90deg, var(--cyan), var(--purple))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>SmartWay</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ background: '#ffffff', padding: '6px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+          <img src="/output-onlinepngtools.png" alt="SmartWay Logo" style={{ height: '30px', cursor: 'pointer' }} onClick={() => router.push('/')} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span className="badge">{role.toUpperCase()}</span>
-          <span>{user}</span>
-          <button className="btn-sm" onClick={loadData} style={{ background: 'rgba(255,255,255,0.1)' }}>🔄 Refresh</button>
-          {role === 'member' && <button className="btn-sm" onClick={() => setShowChangePwd(!showChangePwd)}>Change Password</button>}
-          <button className="btn-sm primary" onClick={doLogout}>Logout</button>
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{user}</span>
+          <button className="theme-toggle" onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          <button className="btn-sm" onClick={loadData}><ArrowRightLeft size={15} /> Refresh</button>
+          {role === 'member' && <button className="btn-sm" onClick={() => setShowChangePwd(!showChangePwd)}><Key size={15} /> Password</button>}
+          {role === 'admin' && <button className="btn-sm" onClick={() => router.push('/admin/settings')}><Settings size={15} /> Settings</button>}
+          <button className="btn-sm primary" onClick={doLogout}><LogOut size={15} /> Logout</button>
         </div>
       </header>
 
       <main style={{ maxWidth: 1300, margin: '0 auto', padding: '32px 24px' }}>
-        <h1 style={{
-          fontSize: '2rem', marginBottom: 32, fontWeight: 700,
+        <h1 className="animate-enter" style={{
+          fontSize: '2.4rem', marginBottom: 32, fontWeight: 800,
+          display: 'flex', alignItems: 'center', gap: 12,
           background: 'linear-gradient(90deg, var(--cyan), var(--purple), var(--pink))',
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-        }}>🚀 Bookings Dashboard</h1>
+          animationDelay: '0.1s'
+        }}><LayoutDashboard size={36} color="var(--cyan)" /> Bookings Dashboard</h1>
 
         {/* Change Password (member only) */}
         {showChangePwd && role === 'member' && (
-          <section style={{ marginBottom: 36 }}>
+          <section className="animate-enter" style={{ marginBottom: 36, animationDelay: '0.3s' }}>
             <div className="card" style={{ maxWidth: 400 }}>
-              <h2 style={{ fontSize: '1.1rem', marginBottom: 14 }}>🔐 Change Password</h2>
+              <h2 style={{ fontSize: '1.2rem', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}><Key size={20} /> Change Password</h2>
               <label>New Password</label>
               <input type="password" id="newPwd" placeholder="••••••••" style={{ width: '100%', marginBottom: 12 }} />
               <label>Confirm</label>
@@ -487,35 +505,39 @@ export default function Dashboard() {
 
         {/* New Booking (Employees only) */}
         {role === 'member' && (
-          <section style={{ marginBottom: 36 }}>
-            <h2 style={{ fontSize: '1.1rem', marginBottom: 14 }}>✨ New Booking</h2>
-            <div className="card" style={{ borderTop: '3px solid var(--cyan)' }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12 }}>👤 Passenger Details</p>
+          <section className="animate-enter" style={{ marginBottom: 36, animationDelay: '0.4s' }}>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: 18, display: 'flex', alignItems: 'center', gap: 10 }}><FileText size={20} /> New Booking</h2>
+            <div className="card" style={{ borderTop: '4px solid var(--cyan)' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><UserCheck size={16} /> Passenger Details</p>
               <div className="row">
                 <input value={booking.clientName} onChange={e => setBooking({ ...booking, clientName: e.target.value })} placeholder="Passenger Name" style={{ minWidth: 140 }} />
                 <input value={booking.clientContact} onChange={e => setBooking({ ...booking, clientContact: e.target.value })} placeholder="Passenger Contact" style={{ minWidth: 140 }} />
                 <input value={booking.pickupLocation} onChange={e => setBooking({ ...booking, pickupLocation: e.target.value })} placeholder="Passenger Location (Pickup)" style={{ minWidth: 200, flex: 1 }} />
               </div>
-              <div className="row" style={{ marginTop: 12 }}>
+              <div className="row" style={{ marginTop: 16 }}>
                 <input value={booking.bookingReferBy} onChange={e => setBooking({ ...booking, bookingReferBy: e.target.value })} placeholder="Refer By (Name)" style={{ minWidth: 140 }} />
                 <input value={booking.bookingReferralContact} onChange={e => setBooking({ ...booking, bookingReferralContact: e.target.value })} placeholder="Referral Contact" style={{ minWidth: 140 }} />
               </div>
 
-              <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>👥 Passengers & Luggage</p>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '24px 0' }}></div>
+
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={16} /> Passengers & Luggage</p>
               <div className="row">
                 <input type="number" value={booking.adults} onChange={e => setBooking({ ...booking, adults: e.target.value })} placeholder="Adults" min="0" style={{ width: 100 }} />
                 <input type="number" value={booking.children} onChange={e => setBooking({ ...booking, children: e.target.value })} placeholder="Children" min="0" style={{ width: 100 }} />
               </div>
-              <div className="row" style={{ flexWrap: 'wrap', gap: 16, marginTop: 12 }}>
+              <div className="row" style={{ flexWrap: 'wrap', gap: 16, marginTop: 16 }}>
                 {[['luggageSuitcase', 'Suitcase'], ['luggageHandCarry', 'Hand Carry'], ['luggageCarton', 'Carton'], ['luggageStroller', 'Stroller'], ['luggageWheelchair', 'Wheelchair']].map(([key, label]) => (
-                  <label key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--muted)' }}>
-                    <input type="number" value={booking[key]} onChange={e => setBooking({ ...booking, [key]: e.target.value })} placeholder="0" min="0" style={{ width: 56, textAlign: 'center', padding: '8px 10px' }} />
+                  <label key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                    <input type="number" value={booking[key]} onChange={e => setBooking({ ...booking, [key]: e.target.value })} placeholder="0" min="0" style={{ width: 64, textAlign: 'center', padding: '10px' }} />
                     {label}
                   </label>
                 ))}
               </div>
 
-              <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>🚗 Vehicle & Routes Section</p>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '24px 0' }}></div>
+
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Car size={16} /> Vehicle & Route Details</p>
               <div className="row">
                 <input list="memberVehicleList" placeholder="-- Vehicle Type --" value={booking.vehicle} onChange={e => setBooking({ ...booking, vehicle: e.target.value })} style={{ minWidth: 160, flex: 1 }} />
                 <datalist id="memberVehicleList">
@@ -546,12 +568,14 @@ export default function Dashboard() {
                   <option value="PM">PM</option>
                 </select>
               </div>
-              <div className="row" style={{ marginTop: 12 }}>
-                <input value={booking.specialRequest} onChange={e => setBooking({ ...booking, specialRequest: e.target.value })} placeholder="Special Request" style={{ minWidth: 200, flex: 1 }} />
+              <div className="row" style={{ marginTop: 16 }}>
+                <input value={booking.specialRequest} onChange={e => setBooking({ ...booking, specialRequest: e.target.value })} placeholder="Special Request / Notes" style={{ minWidth: 200, flex: 1 }} />
                 <input value={booking.totalDuration} onChange={e => setBooking({ ...booking, totalDuration: e.target.value })} placeholder="Total Duration (e.g. 2 Days)" style={{ minWidth: 160 }} />
               </div>
 
-              <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 12, marginTop: 20 }}>💵 Financials (SAR)</p>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '24px 0' }}></div>
+
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><DollarSign size={16} /> Financials (SAR)</p>
               <div className="row">
                 <input type="number" value={booking.advanceSAR} onChange={e => setBooking({ ...booking, advanceSAR: e.target.value })} placeholder="Advance (SAR)" min="0" style={{ width: 160 }} />
                 <input type="number" value={booking.paymentSAR} onChange={e => setBooking({ ...booking, paymentSAR: e.target.value })} placeholder="Total (SAR)" min="0" style={{ width: 160 }} />
@@ -561,15 +585,15 @@ export default function Dashboard() {
                 </select>
               </div>
 
-              <div className="row" style={{ marginTop: 28, gap: 16 }}>
-                <button className="btn-sm primary" style={{ padding: '14px 36px', fontSize: '1rem', fontWeight: 600 }} onClick={handleAddBooking}>💾 Save Booking</button>
+              <div className="row" style={{ marginTop: 32, gap: 16 }}>
+                <button className="btn-sm primary" style={{ padding: '14px 36px', fontSize: '1rem', fontWeight: 600 }} onClick={handleAddBooking}><CheckCircle size={18} /> Save Booking</button>
                 {lastSavedBooking && (
-                  <button className="btn-sm" style={{ padding: '14px 20px', fontSize: '0.9rem', fontWeight: 600, background: 'var(--purple)', color: '#fff', border: 'none' }} onClick={downloadVoucher}>📄 Passenger PDF</button>
+                  <button className="btn-sm text-white" style={{ padding: '14px 20px', fontSize: '0.9rem', fontWeight: 600, background: 'var(--accent-secondary)', border: 'none' }} onClick={downloadVoucher}><FileDown size={18} /> Passenger PDF</button>
                 )}
               </div>
               {saveMsg && (
-                <p style={{ fontSize: '0.9rem', color: 'var(--emerald)', marginTop: 16, padding: '10px 16px', background: 'rgba(16,185,129,0.15)', borderRadius: 10, borderLeft: '4px solid var(--emerald)' }}>
-                  ✅ Booking saved successfully!
+                <p className="animate-enter" style={{ fontSize: '0.95rem', color: 'var(--emerald)', marginTop: 24, padding: '14px 20px', background: 'rgba(16,185,129,0.1)', borderRadius: 12, borderLeft: '4px solid var(--emerald)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <CheckCircle size={18} /> Booking saved successfully!
                 </p>
               )}
             </div>
@@ -578,16 +602,16 @@ export default function Dashboard() {
 
         {/* Bookings Table (admin only) */}
         {role === 'admin' && (
-          <section style={{ marginBottom: 36, position: 'relative' }}>
+          <section className="animate-enter" style={{ marginBottom: 36, position: 'relative', animationDelay: '0.5s' }}>
             {assignModal && (
-              <div style={{
+              <div className="animate-enter" style={{
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+                background: 'rgba(2,6,23,0.8)', backdropFilter: 'blur(8px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
               }}>
-                <div className="card" style={{ width: '100%', maxWidth: 500, background: 'var(--bg)', borderTop: '3px solid var(--purple)' }}>
-                  <h3 style={{ marginBottom: 16 }}>🚕 Assign Driver</h3>
-                  <div className="row" style={{ marginBottom: 12 }}>
+                <div className="card" style={{ width: '100%', maxWidth: 500, borderTop: '4px solid var(--purple)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.8)' }}>
+                  <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, fontSize: '1.2rem' }}><Car size={20} color="var(--purple)" /> Assign Driver</h3>
+                  <div className="row" style={{ marginBottom: 16 }}>
                     <select
                       value={assignModal.driverId || ''}
                       onChange={e => {
@@ -635,11 +659,11 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
-              <h2 style={{ fontSize: '1.1rem', margin: 0 }}>📋 Upcoming Bookings</h2>
-              <button className="btn-sm primary" onClick={exportToExcel}>📥 Export to Excel</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
+              <h2 style={{ fontSize: '1.2rem', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}><Calendar size={20} /> Upcoming Bookings</h2>
+              <button className="btn-sm primary" onClick={exportToExcel}><Download size={16} /> Export to Excel</button>
             </div>
-            <div className="card" style={{ borderTop: '3px solid var(--emerald)', overflowX: 'auto' }}>
+            <div className="card table-container" style={{ borderTop: '4px solid var(--emerald)' }}>
               <table>
                 <thead>
                   <tr>
@@ -652,22 +676,22 @@ export default function Dashboard() {
                 <tbody>
                   {upcomingBookings.map(b => (
                     <tr key={b.id}>
-                      <td>{b.clientName || '-'}</td>
-                      <td>{b.clientContact || '-'}</td>
-                      <td>{b.date || '-'}</td>
+                      <td style={{ fontWeight: 600 }}>{b.clientName || '-'}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{b.clientContact || '-'}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{b.date || '-'}</td>
                       <td>{b.pickupTime || '-'}</td>
                       <td>{b.vehicle || '-'}</td>
                       <td>{b.package || '-'}</td>
                       <td>{(b.adults || 0)} A, {(b.children || 0)} C</td>
-                      <td>{(b.luggageSuitcase || 0)}S {(b.luggageHandCarry || 0)}H {(b.luggageCarton || 0)}C {(b.luggageStroller || 0)}St {(b.luggageWheelchair || 0)}W</td>
+                      <td style={{ fontSize: '0.85rem' }}>{(b.luggageSuitcase || 0)}S {(b.luggageHandCarry || 0)}H {(b.luggageCarton || 0)}C {(b.luggageStroller || 0)}St {(b.luggageWheelchair || 0)}W</td>
                       <td className="sar">{b.paymentSAR || 0} SAR</td>
-                      <td>{b.driverName || '-'}</td>
-                      <td>{b.driverContact || '-'}</td>
+                      <td style={{ fontWeight: 600 }}>{b.driverName || '-'}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{b.driverContact || '-'}</td>
                       <td>{b.driverVehicle || '-'}</td>
-                      <td>{b.driverRegNo || '-'}</td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{b.driverRegNo || '-'}</td>
                       <td className="sar">{b.commissionSAR || 0} SAR</td>
                       <td>
-                        <button className="btn-sm primary" style={{ marginBottom: '5px' }} onClick={() => setAssignModal({
+                        <button className="btn-sm primary" style={{ marginBottom: '8px', width: '100%', justifyContent: 'center' }} onClick={() => setAssignModal({
                           id: b.id,
                           driverId: b.driverId || '',
                           driverName: b.driverName || '',
@@ -678,18 +702,18 @@ export default function Dashboard() {
                           referByName: b.referByName || '',
                           referralContact: b.referralContact || '',
                           commissionSAR: b.commissionSAR || ''
-                        })}>{b.driverName ? 'Update Driver' : 'Assign Driver'}</button>
-                        <br />
+                        })}><Car size={14} /> {b.driverName ? 'Update Driver' : 'Assign Driver'}</button>
+
                         {b.driverName && (
-                          <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={() => {
+                          <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000', width: '100%', justifyContent: 'center' }} onClick={() => {
                             setLastSavedBooking(b);
                             setTimeout(downloadDriverVoucher, 100);
-                          }}> Driver PDF</button>
+                          }}><FileDown size={14} /> Driver PDF</button>
                         )}
                       </td>
                     </tr>
                   ))}
-                  {sortedBookings.length === 0 && <tr><td colSpan={15} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No bookings yet.</td></tr>}
+                  {sortedBookings.length === 0 && <tr><td colSpan={15} style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 32 }}>No bookings yet.</td></tr>}
                 </tbody>
               </table>
             </div>

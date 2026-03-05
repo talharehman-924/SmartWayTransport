@@ -3,9 +3,12 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { isSupabaseReady } from '../lib/supabase';
 import { memberSignUp, memberLogin, getUserData, setUser, addLoginLog, seedDefaults, isPasswordStrong } from '../lib/db';
+import { Mail, Lock, LogIn, UserPlus, AlertCircle, ShieldAlert, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../lib/ThemeContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const [tab, setTab] = useState('login'); // 'login' | 'signup'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -116,40 +119,47 @@ export default function LoginPage() {
     <>
       <Head><title>Login | Booking System</title></Head>
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, position: 'relative', overflow: 'hidden' }}>
+        {/* Theme toggle - top right */}
+        <button className="theme-toggle" onClick={toggleTheme} style={{ position: 'absolute', top: 24, right: 24, zIndex: 10 }} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}>
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
         {/* Background effects */}
-        <div style={{ position: 'absolute', width: 500, height: 500, background: 'radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)', top: -200, right: -200, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', width: 400, height: 400, background: 'radial-gradient(circle, rgba(6,182,212,0.15) 0%, transparent 70%)', bottom: -150, left: -150, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', width: 500, height: 500, background: 'radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%)', top: -200, right: -200, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', width: 400, height: 400, background: 'radial-gradient(circle, rgba(6,182,212,0.12) 0%, transparent 70%)', bottom: -150, left: -150, pointerEvents: 'none' }} />
 
         <div style={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
           {/* Logo area */}
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
             <img
               src="/output-onlinepngtools.png"
-              alt="Company Logo"
+              alt="SmartWay Transport"
               style={{ width: '220px', height: 'auto', marginBottom: '16px', cursor: 'pointer' }}
               onClick={() => router.push('/')}
             />
           </div>
 
-          <div className="card">
+          <div className="card animate-enter" style={{ padding: '36px 32px', borderTop: '4px solid var(--purple)' }}>
             {/* Unified Tabs */}
-            <div className="tabs">
-              <button className={`tab ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); setMsg({ text: '', type: '' }); }}>Login</button>
-              <button className={`tab ${tab === 'signup' ? 'active' : ''}`} onClick={() => { setTab('signup'); setMsg({ text: '', type: '' }); }}>Sign Up</button>
+            <div className="tabs" style={{ background: 'rgba(0,0,0,0.2)', padding: '6px', borderRadius: '14px', marginBottom: '32px' }}>
+              <button className={`tab ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); setMsg({ text: '', type: '' }); }} style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}><LogIn size={18} /> Sign In</button>
+              <button className={`tab ${tab === 'signup' ? 'active' : ''}`} onClick={() => { setTab('signup'); setMsg({ text: '', type: '' }); }} style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}><UserPlus size={18} /> Register</button>
             </div>
 
             {/* Unified Login Form */}
             {tab === 'login' && (
               <form onSubmit={doUnifiedLogin}>
-                <label>Email</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@company.com" style={{ width: '100%', marginBottom: 18 }} />
-                <label>Password</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" style={{ width: '100%', marginBottom: 18 }} />
-                <button className="btn" disabled={loading} type="submit">
-                  {loading ? 'Logging in...' : 'Sign In'}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Mail size={16} color="var(--cyan)" /> Email Address</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@company.com" style={{ width: '100%', marginBottom: 20, padding: '14px 16px' }} />
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Lock size={16} color="var(--pink)" /> Password</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" style={{ width: '100%', marginBottom: 28, padding: '14px 16px' }} />
+
+                <button className="btn primary animate-enter" disabled={loading} type="submit" style={{ width: '100%', padding: '14px 0', fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  {loading ? 'Authenticating...' : <><LogIn size={20} /> Sign In to Dashboard</>}
                 </button>
-                <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: 16, textAlign: 'center' }}>
-                  Awaiting member approval may restrict login.
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 20, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <AlertCircle size={14} /> New accounts require admin approval
                 </p>
               </form>
             )}
@@ -157,19 +167,22 @@ export default function LoginPage() {
             {/* Unified Member Sign Up */}
             {tab === 'signup' && (
               <form onSubmit={doMemberSignup}>
-                <label>Email</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="newmember@company.com" style={{ width: '100%', marginBottom: 18 }} />
-                <label>Password (8+ chars, upper, lower, number, special)</label>
-                <input type="password" value={password} onChange={e => handlePwdChange(e.target.value)} placeholder="••••••••" style={{ width: '100%', marginBottom: 8 }} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Mail size={16} color="var(--cyan)" /> Email Address</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@company.com" style={{ width: '100%', marginBottom: 20, padding: '14px 16px' }} />
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Lock size={16} color="var(--pink)" /> Password <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>(8+ chars, upper, lower, num, spec)</span></label>
+                <input type="password" value={password} onChange={e => handlePwdChange(e.target.value)} placeholder="••••••••" style={{ width: '100%', marginBottom: 10, padding: '14px 16px' }} />
                 <div className={`password-strength ${pwdStrength}`}><span></span></div>
-                {pwdHint && <p className="password-hint" style={{ color: pwdStrength === 'strong' || pwdStrength === 'medium' ? 'var(--emerald)' : 'var(--rose)' }}>{pwdHint}</p>}
-                <label>Confirm Password</label>
-                <input type="password" value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} placeholder="••••••••" style={{ width: '100%', marginBottom: 18 }} />
-                <button className="btn" disabled={loading} type="submit">
-                  {loading ? 'Creating...' : 'Create Account'}
+                {pwdHint && <p className="password-hint animate-enter" style={{ color: pwdStrength === 'strong' || pwdStrength === 'medium' ? 'var(--emerald)' : 'var(--danger)', marginBottom: 20 }}>{pwdHint}</p>}
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Lock size={16} color="var(--pink)" /> Confirm Password</label>
+                <input type="password" value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)} placeholder="••••••••" style={{ width: '100%', marginBottom: 28, padding: '14px 16px' }} />
+
+                <button className="btn primary animate-enter" disabled={loading} type="submit" style={{ width: '100%', padding: '14px 0', fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  {loading ? 'Creating...' : <><UserPlus size={20} /> Create Account</>}
                 </button>
-                <p style={{ fontSize: '0.8rem', color: 'var(--amber)', marginTop: 16, textAlign: 'center' }}>
-                  ⚠️ After signup, your account must be approved by admin before you can login.
+                <p style={{ fontSize: '0.85rem', color: 'var(--warning)', marginTop: 20, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <ShieldAlert size={14} /> Account requires admin approval after signup.
                 </p>
               </form>
             )}

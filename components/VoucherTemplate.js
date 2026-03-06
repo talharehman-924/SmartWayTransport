@@ -156,11 +156,11 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
         </div>
         <div className="pdf-grid-item">
           <label>VOUCHER DATE</label>
-          <div className="pdf-fake-field">{bookingData.date || '-'}</div>
+          <div className="pdf-fake-field">{new Date().toLocaleDateString('en-GB')}</div>
         </div>
         <div className="pdf-grid-item">
           <label>VOUCHER TIME</label>
-          <div className="pdf-fake-field">{bookingData.pickupTime || '-'}</div>
+          <div className="pdf-fake-field">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
         </div>
         <div className="pdf-grid-item">
           <label>STATUS</label>
@@ -251,7 +251,11 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
       </div>
 
       <div style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', marginTop: '12px', zIndex: 1, position: 'relative', background: 'rgba(255,255,255,0.7)' }}>
-        <div className="pdf-grid cols-2" style={{ marginTop: 0 }}>
+        <div className="pdf-grid" style={{ marginTop: 0 }}>
+          <div className="pdf-grid-item">
+            <label>Pick Up Date</label>
+            <div className="pdf-fake-field">{bookingData.date || '-'}</div>
+          </div>
           <div className="pdf-grid-item">
             <label>Pick Up Location</label>
             <div className="pdf-fake-field">{bookingData.pickupLocation || '-'}</div>

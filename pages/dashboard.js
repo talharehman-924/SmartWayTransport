@@ -692,7 +692,7 @@ export default function Dashboard() {
               </div>
               <div className="row" style={{ marginTop: 12 }}>
                 <div style={{ minWidth: 140 }}>
-                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</label>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pick Up Date</label>
                   <input type="date" value={booking.date} onChange={e => setBooking({ ...booking, date: e.target.value })} style={{ width: '100%' }} />
                 </div>
                 <div style={{ minWidth: 140 }}>

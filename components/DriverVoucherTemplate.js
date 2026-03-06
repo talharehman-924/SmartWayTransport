@@ -157,11 +157,11 @@ export default function DriverVoucherTemplate({ driverData, pdfRef }) {
                 </div>
                 <div className="pdf-grid-item">
                     <label>Voucher Date</label>
-                    <div className="pdf-fake-field">{driverData.date || '-'}</div>
+                    <div className="pdf-fake-field">{new Date().toLocaleDateString('en-GB')}</div>
                 </div>
                 <div className="pdf-grid-item">
                     <label>Voucher Time</label>
-                    <div className="pdf-fake-field">{driverData.pickupTime || '-'}</div>
+                    <div className="pdf-fake-field">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
                 </div>
                 <div className="pdf-grid-item">
                     <label>Status</label>
@@ -255,10 +255,14 @@ export default function DriverVoucherTemplate({ driverData, pdfRef }) {
             </div>
 
             <div style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', zIndex: 1, position: 'relative', background: 'rgba(255,255,255,0.7)', marginTop: '12px' }}>
-                <div className="pdf-grid cols-2" style={{ marginTop: 0 }}>
+                <div className="pdf-grid" style={{ marginTop: 0 }}>
                     <div className="pdf-grid-item">
-                        <label>Pick Up Date & Time</label>
-                        <div className="pdf-fake-field">{driverData.date || '-'} {driverData.pickupTime || ''}</div>
+                        <label>Pick Up Date</label>
+                        <div className="pdf-fake-field">{driverData.date || '-'}</div>
+                    </div>
+                    <div className="pdf-grid-item">
+                        <label>Pick Up Time</label>
+                        <div className="pdf-fake-field">{driverData.pickupTime || '-'}</div>
                     </div>
                     <div className="pdf-grid-item">
                         <label>Drop-off Location</label>

@@ -189,8 +189,6 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
             <label>Nationality</label>
             <div className="pdf-fake-field">{bookingData.nationality || '-'}</div>
           </div>
-        </div>
-        <div className="pdf-grid" style={{ marginTop: 12 }}>
           <div className="pdf-grid-item">
             <label>Adults</label>
             <div className="pdf-fake-field">{bookingData.adults || 0}</div>
@@ -206,30 +204,6 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
         </div>
       </div>
 
-      <div className="pdf-section">Luggage Details</div>
-      <div style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', marginTop: '12px', zIndex: 1, position: 'relative', background: 'rgba(255,255,255,0.7)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-          <thead>
-            <tr>
-              <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>Suitcase</th>
-              <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>Hand Carry</th>
-              <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>Carton</th>
-              <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>Stroller</th>
-              <th style={{ padding: '8px 12px', textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: '11px', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0' }}>Wheelchair</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, fontSize: '15px', color: '#334155' }}>{bookingData.luggageSuitcase || 0}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, fontSize: '15px', color: '#334155' }}>{bookingData.luggageHandCarry || 0}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, fontSize: '15px', color: '#334155' }}>{bookingData.luggageCarton || 0}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, fontSize: '15px', color: '#334155' }}>{bookingData.luggageStroller || 0}</td>
-              <td style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, fontSize: '15px', color: '#334155' }}>{bookingData.luggageWheelchair || 0}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
       <div className="pdf-section">Vehicle & Routes</div>
       <div className="pdf-grid">
         <div className="pdf-grid-item">
@@ -243,6 +217,26 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
         <div className="pdf-grid-item">
           <label>SPECIAL REQUEST</label>
           <div className="pdf-fake-field">{bookingData.specialRequest || '-'}</div>
+        </div>
+        <div className="pdf-grid-item">
+          <label>SUITCASE</label>
+          <div className="pdf-fake-field">{bookingData.luggageSuitcase || 0}</div>
+        </div>
+        <div className="pdf-grid-item">
+          <label>HAND CARRY</label>
+          <div className="pdf-fake-field">{bookingData.luggageHandCarry || 0}</div>
+        </div>
+        <div className="pdf-grid-item">
+          <label>CARTON</label>
+          <div className="pdf-fake-field">{bookingData.luggageCarton || 0}</div>
+        </div>
+        <div className="pdf-grid-item">
+          <label>STROLLER</label>
+          <div className="pdf-fake-field">{bookingData.luggageStroller || 0}</div>
+        </div>
+        <div className="pdf-grid-item">
+          <label>WHEELCHAIR</label>
+          <div className="pdf-fake-field">{bookingData.luggageWheelchair || 0}</div>
         </div>
       </div>
 

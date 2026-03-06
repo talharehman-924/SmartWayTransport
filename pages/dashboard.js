@@ -23,6 +23,14 @@ export default function Dashboard() {
   const [showChangePwd, setShowChangePwd] = useState(false);
   const [pwdMsg, setPwdMsg] = useState({ text: '', color: '' });
 
+  const upcomingRef = useRef(null);
+
+  const scrollTable = (ref, dir) => {
+    if (ref && ref.current) {
+      ref.current.scrollBy({ left: dir === 'left' ? -350 : 350, behavior: 'smooth' });
+    }
+  };
+
   // Form states
   const [newVehicle, setNewVehicle] = useState('');
   const [newPackage, setNewPackage] = useState('');
@@ -47,47 +55,34 @@ export default function Dashboard() {
       const { jsPDF } = await import('jspdf');
       const { default: html2canvas } = await import('html2canvas');
 
-      // Clone the hidden voucher into a temporary visible container for mobile compatibility
-      const clone = pdfRef.current.cloneNode(true);
-      clone.style.position = 'fixed';
-      clone.style.top = '0';
-      clone.style.left = '0';
-      clone.style.width = '900px';
-      clone.style.zIndex = '-9999';
-      clone.style.opacity = '1';
-      clone.style.pointerEvents = 'none';
-      document.body.appendChild(clone);
-
-      // Wait for browser to render
-      await new Promise(r => setTimeout(r, 300));
-
-      const canvas = await html2canvas(clone, {
+      const canvas = await html2canvas(pdfRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
-        scrollY: 0,
         scrollX: 0,
+        scrollY: -window.scrollY,
         windowWidth: 960,
+        onclone: (clonedDoc, clonedEl) => {
+          // Fix the cloned element to be visible in the cloned document
+          clonedEl.style.position = 'static';
+          clonedEl.style.top = 'auto';
+          clonedEl.style.left = 'auto';
+          clonedEl.style.width = '900px';
+          clonedEl.style.opacity = '1';
+          clonedEl.style.zIndex = '1';
+        }
       });
-
-      document.body.removeChild(clone);
 
       const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const imgW = canvas.width;
       const imgH = canvas.height;
-
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'px',
-        format: [imgW, imgH]
-      });
-
+      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [imgW, imgH] });
       pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, undefined, 'FAST');
       pdf.save(`SmartWay_Voucher_${lastSavedBooking?.date || 'Download'}.pdf`);
 
     } catch (err) {
       console.error("PDF Generation Error", err);
-      alert("Failed to create the styled PDF.");
+      alert("Failed to create the styled PDF. Error: " + err.message);
     }
   };
 
@@ -97,47 +92,33 @@ export default function Dashboard() {
       const { jsPDF } = await import('jspdf');
       const { default: html2canvas } = await import('html2canvas');
 
-      // Clone the hidden voucher into a temporary visible container for mobile compatibility
-      const clone = driverPdfRef.current.cloneNode(true);
-      clone.style.position = 'fixed';
-      clone.style.top = '0';
-      clone.style.left = '0';
-      clone.style.width = '900px';
-      clone.style.zIndex = '-9999';
-      clone.style.opacity = '1';
-      clone.style.pointerEvents = 'none';
-      document.body.appendChild(clone);
-
-      // Wait for browser to render
-      await new Promise(r => setTimeout(r, 300));
-
-      const canvas = await html2canvas(clone, {
+      const canvas = await html2canvas(driverPdfRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
-        scrollY: 0,
         scrollX: 0,
+        scrollY: -window.scrollY,
         windowWidth: 960,
+        onclone: (clonedDoc, clonedEl) => {
+          clonedEl.style.position = 'static';
+          clonedEl.style.top = 'auto';
+          clonedEl.style.left = 'auto';
+          clonedEl.style.width = '900px';
+          clonedEl.style.opacity = '1';
+          clonedEl.style.zIndex = '1';
+        }
       });
-
-      document.body.removeChild(clone);
 
       const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const imgW = canvas.width;
       const imgH = canvas.height;
-
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'px',
-        format: [imgW, imgH]
-      });
-
+      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [imgW, imgH] });
       pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, undefined, 'FAST');
       pdf.save(`SmartWay_Driver_Voucher_${lastSavedBooking?.date || 'Download'}.pdf`);
 
     } catch (err) {
       console.error("PDF Generation Error", err);
-      alert("Failed to create the driver styled PDF.");
+      alert("Failed to create the driver styled PDF. Error: " + err.message);
     }
   };
 
@@ -579,33 +560,29 @@ export default function Dashboard() {
                 </div>
                 <div style={{ flex: 1, minWidth: 160 }}>
                   <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Package / Route (tap to select)</label>
-                  {/* Always-visible package chips - tap to toggle */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                  {/* Dropdown to select packages */}
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      const current = (booking.package || '').split(', ').filter(Boolean);
+                      if (!current.includes(val)) {
+                        setBooking({ ...booking, package: [...current, val].join(', ') });
+                      }
+                    }}
+                    style={{ width: '100%', marginBottom: 8, padding: '10px 12px', borderRadius: 8, fontSize: '0.85rem' }}
+                  >
+                    <option value="">-- Dropdown to Select Packages --</option>
                     {packages.map(p => {
                       const selected = (booking.package || '').split(', ').filter(Boolean).includes(p);
                       return (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => {
-                            const current = (booking.package || '').split(', ').filter(Boolean);
-                            const updated = selected ? current.filter(x => x !== p) : [...current, p];
-                            setBooking({ ...booking, package: updated.join(', ') });
-                          }}
-                          style={{
-                            padding: '10px 16px', borderRadius: 20, cursor: 'pointer',
-                            fontSize: '0.85rem', fontWeight: 600, border: 'none',
-                            background: selected ? 'var(--cyan)' : 'rgba(255,255,255,0.08)',
-                            color: selected ? '#000' : 'var(--muted)',
-                            outline: selected ? '2px solid var(--cyan)' : '1px solid rgba(255,255,255,0.15)',
-                            transition: 'all 0.15s ease',
-                            WebkitTapHighlightColor: 'transparent',
-                            minHeight: 40,
-                          }}
-                        >{selected ? '✓ ' : ''}{p}</button>
+                        <option key={p} value={p} disabled={selected}>
+                          {p} {selected ? '(Selected)' : ''}
+                        </option>
                       );
                     })}
-                  </div>
+                  </select>
                   {/* Custom route input */}
                   <div style={{ display: 'flex', gap: 6 }}>
                     <input
@@ -640,11 +617,64 @@ export default function Dashboard() {
                       }}
                     >+</button>
                   </div>
+                  {/* Selected Packages - Slide Down Panel with numbered list and cross buttons */}
                   {booking.package && (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--emerald)', marginTop: 6 }}>
-                      Selected: {booking.package}
+                    <div style={{
+                      marginTop: 10, padding: '12px 14px',
+                      background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,182,212,0.08))',
+                      borderRadius: 12, border: '1px solid rgba(16,185,129,0.25)',
+                      animation: 'slideDownPkg 0.3s ease-out',
+                    }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--emerald)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        📦 Selected Packages ({(booking.package || '').split(', ').filter(Boolean).length})
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {(booking.package || '').split(', ').filter(Boolean).map((pkg, idx) => (
+                          <div key={pkg + idx} style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '8px 12px', borderRadius: 8,
+                            background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)',
+                            animation: 'slideInPkg 0.25s ease-out',
+                            animationDelay: `${idx * 0.05}s`,
+                            animationFillMode: 'both',
+                          }}>
+                            <span style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 500 }}>
+                              <span style={{ color: 'var(--cyan)', fontWeight: 700, marginRight: 6 }}>P{idx + 1}.</span>
+                              {pkg}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const current = (booking.package || '').split(', ').filter(Boolean);
+                                const updated = current.filter(x => x !== pkg);
+                                setBooking({ ...booking, package: updated.join(', ') });
+                              }}
+                              style={{
+                                background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)',
+                                color: '#f87171', borderRadius: '50%', width: 26, height: 26,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700,
+                                transition: 'all 0.15s ease', lineHeight: 1, padding: 0, flexShrink: 0,
+                              }}
+                              onMouseEnter={e => { e.target.style.background = 'rgba(239,68,68,0.5)'; e.target.style.color = '#fff'; }}
+                              onMouseLeave={e => { e.target.style.background = 'rgba(239,68,68,0.2)'; e.target.style.color = '#f87171'; }}
+                              title={`Remove ${pkg}`}
+                            >✕</button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
+                  <style jsx>{`
+                    @keyframes slideDownPkg {
+                      from { opacity: 0; transform: translateY(-10px); max-height: 0; }
+                      to { opacity: 1; transform: translateY(0); max-height: 500px; }
+                    }
+                    @keyframes slideInPkg {
+                      from { opacity: 0; transform: translateX(-15px); }
+                      to { opacity: 1; transform: translateX(0); }
+                    }
+                  `}</style>
                 </div>
                 <div style={{ flex: 1, minWidth: 160 }}>
                   <label style={{ display: 'block', fontSize: '0.7rem', color: '#f59e0b', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>📍 Drop-off Location</label>
@@ -776,59 +806,63 @@ export default function Dashboard() {
               <h2 style={{ fontSize: '1.1rem', margin: 0 }}>📋 Upcoming Bookings</h2>
               <button className="btn-sm primary" onClick={exportToExcel}>📥 Export to Excel</button>
             </div>
-            <div className="card" style={{ borderTop: '3px solid var(--emerald)', overflowX: 'auto' }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Client Name</th><th>Contact</th><th>Date</th><th>Time</th><th>Vehicle</th>
-                    <th>Package</th><th>Passengers</th><th>Luggage</th><th>Payment</th>
-                    <th>Driver</th><th>D.Contact</th><th>D.Vehicle</th><th>Reg No.</th><th>Commission</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {upcomingBookings.map(b => (
-                    <tr key={b.id}>
-                      <td>{b.clientName || '-'}</td>
-                      <td>{b.clientContact || '-'}</td>
-                      <td>{b.date || '-'}</td>
-                      <td>{b.pickupTime || '-'}</td>
-                      <td>{b.vehicle || '-'}</td>
-                      <td>{b.package || '-'}</td>
-                      <td>{(b.adults || 0)} A, {(b.children || 0)} C</td>
-                      <td>{(b.luggageSuitcase || 0)}S {(b.luggageHandCarry || 0)}H {(b.luggageCarton || 0)}C {(b.luggageStroller || 0)}St {(b.luggageWheelchair || 0)}W</td>
-                      <td className="sar">{b.paymentSAR || 0} SAR</td>
-                      <td>{b.driverName || '-'}</td>
-                      <td>{b.driverContact || '-'}</td>
-                      <td>{b.driverVehicle || '-'}</td>
-                      <td>{b.driverRegNo || '-'}</td>
-                      <td className="sar">{b.commissionSAR || 0} SAR</td>
-                      <td>
-                        <button className="btn-sm primary" style={{ marginBottom: '5px' }} onClick={() => setAssignModal({
-                          id: b.id,
-                          driverId: b.driverId || '',
-                          driverName: b.driverName || '',
-                          driverContact: b.driverContact || '',
-                          driverVehicle: b.driverVehicle || '',
-                          driverRegNo: b.driverRegNo || '',
-                          shirqaName: b.shirqaName || '',
-                          referByName: b.referByName || '',
-                          referralContact: b.referralContact || '',
-                          commissionSAR: b.commissionSAR || ''
-                        })}>{b.driverName ? 'Update Driver' : 'Assign Driver'}</button>
-                        <br />
-                        {b.driverName && (
-                          <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={() => {
-                            setLastSavedBooking(b);
-                            setTimeout(downloadDriverVoucher, 500);
-                          }}> Driver PDF</button>
-                        )}
-                      </td>
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => scrollTable(upcomingRef, 'left')} style={{ position: 'absolute', left: -15, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 36, height: 36, borderRadius: '50%', background: 'var(--bg)', color: '#fff', border: '2px solid var(--cyan)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>❮</button>
+              <button onClick={() => scrollTable(upcomingRef, 'right')} style={{ position: 'absolute', right: -15, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 36, height: 36, borderRadius: '50%', background: 'var(--bg)', color: '#fff', border: '2px solid var(--cyan)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>❯</button>
+              <div className="card" ref={upcomingRef} style={{ borderTop: '3px solid var(--emerald)', overflowX: 'auto', margin: 0 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Client Name</th><th>Contact</th><th>Date</th><th>Time</th><th>Vehicle</th>
+                      <th>Package</th><th>Passengers</th><th>Luggage</th><th>Payment</th>
+                      <th>Driver</th><th>D.Contact</th><th>D.Vehicle</th><th>Reg No.</th><th>Commission</th>
+                      <th>Actions</th>
                     </tr>
-                  ))}
-                  {sortedBookings.length === 0 && <tr><td colSpan={15} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No bookings yet.</td></tr>}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {upcomingBookings.map(b => (
+                      <tr key={b.id}>
+                        <td>{b.clientName || '-'}</td>
+                        <td>{b.clientContact || '-'}</td>
+                        <td>{b.date || '-'}</td>
+                        <td>{b.pickupTime || '-'}</td>
+                        <td>{b.vehicle || '-'}</td>
+                        <td>{b.package || '-'}</td>
+                        <td>{(b.adults || 0)} A, {(b.children || 0)} C</td>
+                        <td>{(b.luggageSuitcase || 0)}S {(b.luggageHandCarry || 0)}H {(b.luggageCarton || 0)}C {(b.luggageStroller || 0)}St {(b.luggageWheelchair || 0)}W</td>
+                        <td className="sar">{b.paymentSAR || 0} SAR</td>
+                        <td>{b.driverName || '-'}</td>
+                        <td>{b.driverContact || '-'}</td>
+                        <td>{b.driverVehicle || '-'}</td>
+                        <td>{b.driverRegNo || '-'}</td>
+                        <td className="sar">{b.commissionSAR || 0} SAR</td>
+                        <td>
+                          <button className="btn-sm primary" style={{ marginBottom: '5px' }} onClick={() => setAssignModal({
+                            id: b.id,
+                            driverId: b.driverId || '',
+                            driverName: b.driverName || '',
+                            driverContact: b.driverContact || '',
+                            driverVehicle: b.driverVehicle || '',
+                            driverRegNo: b.driverRegNo || '',
+                            shirqaName: b.shirqaName || '',
+                            referByName: b.referByName || '',
+                            referralContact: b.referralContact || '',
+                            commissionSAR: b.commissionSAR || ''
+                          })}>{b.driverName ? 'Update Driver' : 'Assign Driver'}</button>
+                          <br />
+                          {b.driverName && (
+                            <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={() => {
+                              setLastSavedBooking(b);
+                              setTimeout(downloadDriverVoucher, 500);
+                            }}> Driver PDF</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {sortedBookings.length === 0 && <tr><td colSpan={15} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No bookings yet.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
         )}

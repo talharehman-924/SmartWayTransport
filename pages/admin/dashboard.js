@@ -4,7 +4,7 @@ import Head from 'next/head';
 import {
   getVehicles, getPackages, getDrivers, getBookings,
   addVehicle, addPackage, addDriver, addBooking, updateBookingDriver,
-  getPendingUsers, approveUser, rejectUser,
+  getPendingUsers, getAllUsers, approveUser, rejectUser,
   updatePassword, isPasswordStrong, memberSignOut,
   updateBooking, updateBookingStatus, deleteBooking, toggleCommissionStatus,
   getDriverBalances, recordDriverPayment, updateDriver, deleteDriver,
@@ -22,11 +22,21 @@ export default function Dashboard() {
   const [packages, setPackages] = useState([]);
   const [driversList, setDriversList] = useState([]);
   const [bookings, setBookings] = useState([]);
-  const [pendingUsers, setPendingUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [driverBalances, setDriverBalances] = useState([]);
   const [showChangePwd, setShowChangePwd] = useState(false);
   const [pwdMsg, setPwdMsg] = useState({ text: '', color: '' });
   const [searchQuery, setSearchQuery] = useState('');
+
+  const upcomingRef = useRef(null);
+  const pastRef = useRef(null);
+  const settlementRef = useRef(null);
+
+  const scrollTable = (ref, dir) => {
+    if (ref && ref.current) {
+      ref.current.scrollBy({ left: dir === 'left' ? -350 : 350, behavior: 'smooth' });
+    }
+  };
 
   // Form states
   const [newVehicle, setNewVehicle] = useState('');
@@ -56,45 +66,33 @@ export default function Dashboard() {
       const { jsPDF } = await import('jspdf');
       const { default: html2canvas } = await import('html2canvas');
 
-      const clone = pdfRef.current.cloneNode(true);
-      clone.style.position = 'fixed';
-      clone.style.top = '0';
-      clone.style.left = '0';
-      clone.style.width = '900px';
-      clone.style.zIndex = '-9999';
-      clone.style.opacity = '1';
-      clone.style.pointerEvents = 'none';
-      document.body.appendChild(clone);
-
-      await new Promise(r => setTimeout(r, 300));
-
-      const canvas = await html2canvas(clone, {
+      const canvas = await html2canvas(pdfRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
-        scrollY: 0,
         scrollX: 0,
+        scrollY: -window.scrollY,
         windowWidth: 960,
+        onclone: (clonedDoc, clonedEl) => {
+          clonedEl.style.position = 'static';
+          clonedEl.style.top = 'auto';
+          clonedEl.style.left = 'auto';
+          clonedEl.style.width = '900px';
+          clonedEl.style.opacity = '1';
+          clonedEl.style.zIndex = '1';
+        }
       });
-
-      document.body.removeChild(clone);
 
       const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const imgW = canvas.width;
       const imgH = canvas.height;
-
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'px',
-        format: [imgW, imgH]
-      });
-
+      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [imgW, imgH] });
       pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, undefined, 'FAST');
       pdf.save(`SmartWay_Voucher_${lastSavedBooking?.date || 'Download'}.pdf`);
 
     } catch (err) {
       console.error("PDF Generation Error", err);
-      alert("Failed to create the styled PDF.");
+      alert("Failed to create the styled PDF. Error: " + err.message);
     }
   };
 
@@ -104,45 +102,33 @@ export default function Dashboard() {
       const { jsPDF } = await import('jspdf');
       const { default: html2canvas } = await import('html2canvas');
 
-      const clone = driverPdfRef.current.cloneNode(true);
-      clone.style.position = 'fixed';
-      clone.style.top = '0';
-      clone.style.left = '0';
-      clone.style.width = '900px';
-      clone.style.zIndex = '-9999';
-      clone.style.opacity = '1';
-      clone.style.pointerEvents = 'none';
-      document.body.appendChild(clone);
-
-      await new Promise(r => setTimeout(r, 300));
-
-      const canvas = await html2canvas(clone, {
+      const canvas = await html2canvas(driverPdfRef.current, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
-        scrollY: 0,
         scrollX: 0,
+        scrollY: -window.scrollY,
         windowWidth: 960,
+        onclone: (clonedDoc, clonedEl) => {
+          clonedEl.style.position = 'static';
+          clonedEl.style.top = 'auto';
+          clonedEl.style.left = 'auto';
+          clonedEl.style.width = '900px';
+          clonedEl.style.opacity = '1';
+          clonedEl.style.zIndex = '1';
+        }
       });
-
-      document.body.removeChild(clone);
 
       const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const imgW = canvas.width;
       const imgH = canvas.height;
-
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'px',
-        format: [imgW, imgH]
-      });
-
+      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [imgW, imgH] });
       pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, undefined, 'FAST');
       pdf.save(`SmartWay_Driver_Voucher_${lastSavedBooking?.date || 'Download'}.pdf`);
 
     } catch (err) {
       console.error("PDF Generation Error", err);
-      alert("Failed to create the driver styled PDF.");
+      alert("Failed to create the driver styled PDF. Error: " + err.message);
     }
   };
 
@@ -158,8 +144,8 @@ export default function Dashboard() {
       setDriversList(dList);
       setDriverBalances(bal);
       if (role === 'admin') {
-        const pending = await getPendingUsers();
-        setPendingUsers(pending);
+        const users = await getAllUsers();
+        setAllUsers(users);
       }
     } catch (e) { console.error('Load data:', e); }
   }, [role]);
@@ -375,16 +361,16 @@ export default function Dashboard() {
   }
 
   async function handleApprove(uid) {
-    if (!confirm('Approve this user?')) return;
+    if (!confirm('Grant access to this user?')) return;
     await approveUser(uid);
-    alert('User approved.');
+    alert('Access granted.');
     await loadData();
   }
 
   async function handleReject(uid) {
-    if (!confirm('Reject this user?')) return;
+    if (!confirm('Terminate access for this user?')) return;
     await rejectUser(uid);
-    alert('User rejected.');
+    alert('Access terminated.');
     await loadData();
   }
 
@@ -565,26 +551,40 @@ export default function Dashboard() {
         )}
 
 
-        {/* Pending Approvals (admin only) */}
+        {/* User Management (admin only) */}
         {role === 'admin' && (
           <section style={{ marginBottom: 36 }}>
             <h2 style={{ fontSize: '1.1rem', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-              ⏳ Pending Approvals <span className="pending-count">{pendingUsers.length}</span>
+              👥 User Management <span className="pending-count" style={{ background: 'var(--cyan)' }}>{allUsers.length}</span>
             </h2>
-            <div className="card" style={{ borderTop: '3px solid var(--amber)' }}>
-              {pendingUsers.length === 0 ? (
-                <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 16 }}>No pending requests.</p>
+            <div className="card" style={{ borderTop: '3px solid var(--amber)', overflowX: 'auto' }}>
+              {allUsers.length === 0 ? (
+                <p style={{ color: 'var(--muted)', textAlign: 'center', padding: 16 }}>No users found.</p>
               ) : (
                 <table>
-                  <thead><tr><th>Email</th><th>Requested</th><th>Actions</th></tr></thead>
+                  <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Registered</th><th>Actions</th></tr></thead>
                   <tbody>
-                    {pendingUsers.map(u => (
+                    {allUsers.map(u => (
                       <tr key={u.uid}>
+                        <td style={{ fontWeight: 600, color: 'var(--cyan)', textTransform: 'capitalize' }}>{u.email.split('@')[0]}</td>
                         <td>{u.email}</td>
+                        <td>
+                          <span style={{
+                            padding: '4px 8px', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase',
+                            background: u.status === 'approved' ? 'rgba(16,185,129,0.15)' : u.status === 'pending' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)',
+                            color: u.status === 'approved' ? 'var(--emerald)' : u.status === 'pending' ? 'var(--amber)' : '#f87171'
+                          }}>
+                            {u.status}
+                          </span>
+                        </td>
                         <td>{u.createdAt ? new Date(u.createdAt).toLocaleString() : '-'}</td>
                         <td>
-                          <button className="btn-sm success" onClick={() => handleApprove(u.uid)} style={{ marginRight: 8 }}>Approve</button>
-                          <button className="btn-sm danger" onClick={() => handleReject(u.uid)}>Reject</button>
+                          {u.status !== 'approved' && (
+                            <button className="btn-sm success" onClick={() => handleApprove(u.uid)} style={{ marginRight: 8 }}>Grant Access</button>
+                          )}
+                          {u.status !== 'rejected' && (
+                            <button className="btn-sm danger" onClick={() => handleReject(u.uid)}>Terminate</button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -759,19 +759,91 @@ export default function Dashboard() {
               </div>
               <div style={{ flex: 1, minWidth: 160 }}>
                 <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Package / Route (tap to select)</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                {/* Dropdown to select packages */}
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) return;
+                    const current = (booking.package || '').split(', ').filter(Boolean);
+                    if (!current.includes(val)) {
+                      setBooking({ ...booking, package: [...current, val].join(', ') });
+                    }
+                  }}
+                  style={{ width: '100%', marginBottom: 8, padding: '10px 12px', borderRadius: 8, fontSize: '0.85rem' }}
+                >
+                  <option value="">-- Dropdown to Select Packages --</option>
                   {packages.map(p => {
                     const selected = (booking.package || '').split(', ').filter(Boolean).includes(p);
                     return (
-                      <button key={p} type="button" onClick={() => { const current = (booking.package || '').split(', ').filter(Boolean); const updated = selected ? current.filter(x => x !== p) : [...current, p]; setBooking({ ...booking, package: updated.join(', ') }); }} style={{ padding: '10px 16px', borderRadius: 20, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, border: 'none', background: selected ? 'var(--cyan)' : 'rgba(255,255,255,0.08)', color: selected ? '#000' : 'var(--muted)', outline: selected ? '2px solid var(--cyan)' : '1px solid rgba(255,255,255,0.15)', transition: 'all 0.15s ease', WebkitTapHighlightColor: 'transparent', minHeight: 40 }}>{selected ? '✓ ' : ''}{p}</button>
+                      <option key={p} value={p} disabled={selected}>
+                        {p} {selected ? '(Selected)' : ''}
+                      </option>
                     );
                   })}
-                </div>
+                </select>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <input type="text" placeholder="Type custom route & press +" value={booking._customPkg || ''} onChange={(e) => setBooking({ ...booking, _customPkg: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter' && (booking._customPkg || '').trim()) { e.preventDefault(); const val = booking._customPkg.trim(); const current = (booking.package || '').split(', ').filter(Boolean); if (!current.includes(val)) current.push(val); setBooking({ ...booking, package: current.join(', '), _customPkg: '' }); } }} style={{ flex: 1, padding: '10px 12px', fontSize: '0.85rem', borderRadius: 8 }} />
                   <button type="button" onClick={() => { const val = (booking._customPkg || '').trim(); if (!val) return; const current = (booking.package || '').split(', ').filter(Boolean); if (!current.includes(val)) current.push(val); setBooking({ ...booking, package: current.join(', '), _customPkg: '' }); }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--cyan)', color: '#000', fontWeight: 700, fontSize: '1rem', minWidth: 44, minHeight: 40 }}>+</button>
                 </div>
-                {booking.package && <div style={{ fontSize: '0.75rem', color: 'var(--emerald)', marginTop: 6 }}>Selected: {booking.package}</div>}
+                {/* Selected Packages - Slide Down Panel with numbered list and cross buttons */}
+                {booking.package && (
+                  <div style={{
+                    marginTop: 10, padding: '12px 14px',
+                    background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,182,212,0.08))',
+                    borderRadius: 12, border: '1px solid rgba(16,185,129,0.25)',
+                    animation: 'slideDownPkg 0.3s ease-out',
+                  }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--emerald)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      📦 Selected Packages ({(booking.package || '').split(', ').filter(Boolean).length})
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {(booking.package || '').split(', ').filter(Boolean).map((pkg, idx) => (
+                        <div key={pkg + idx} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '8px 12px', borderRadius: 8,
+                          background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)',
+                          animation: 'slideInPkg 0.25s ease-out',
+                          animationDelay: `${idx * 0.05}s`,
+                          animationFillMode: 'both',
+                        }}>
+                          <span style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 500 }}>
+                            <span style={{ color: 'var(--cyan)', fontWeight: 700, marginRight: 6 }}>P{idx + 1}.</span>
+                            {pkg}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const current = (booking.package || '').split(', ').filter(Boolean);
+                              const updated = current.filter(x => x !== pkg);
+                              setBooking({ ...booking, package: updated.join(', ') });
+                            }}
+                            style={{
+                              background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)',
+                              color: '#f87171', borderRadius: '50%', width: 26, height: 26,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700,
+                              transition: 'all 0.15s ease', lineHeight: 1, padding: 0, flexShrink: 0,
+                            }}
+                            onMouseEnter={e => { e.target.style.background = 'rgba(239,68,68,0.5)'; e.target.style.color = '#fff'; }}
+                            onMouseLeave={e => { e.target.style.background = 'rgba(239,68,68,0.2)'; e.target.style.color = '#f87171'; }}
+                            title={`Remove ${pkg}`}
+                          >✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <style jsx>{`
+                  @keyframes slideDownPkg {
+                    from { opacity: 0; transform: translateY(-10px); max-height: 0; }
+                    to { opacity: 1; transform: translateY(0); max-height: 500px; }
+                  }
+                  @keyframes slideInPkg {
+                    from { opacity: 0; transform: translateX(-15px); }
+                    to { opacity: 1; transform: translateX(0); }
+                  }
+                `}</style>
               </div>
               <div style={{ flex: 1, minWidth: 160 }}>
                 <label style={{ display: 'block', fontSize: '0.7rem', color: '#f59e0b', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>📍 Drop-off Location</label>
@@ -939,11 +1011,78 @@ export default function Dashboard() {
                     <option value="">-- Vehicle Type --</option>
                     {vehicles.map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
-                  <select value={editModal.package} onChange={e => setEditModal({ ...editModal, package: e.target.value })} style={{ flex: 1 }}>
-                    <option value="">-- Package / Route --</option>
-                    {packages.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
                   <input value={editModal.specialRequest} onChange={e => setEditModal({ ...editModal, specialRequest: e.target.value })} placeholder="Special Request" style={{ flex: 1 }} />
+                </div>
+                <div style={{ flex: 1, marginBottom: 16 }}>
+                  <label style={{ display: 'block', fontSize: '0.7rem', color: 'var(--cyan)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Package / Route (tap to select)</label>
+                  {/* Dropdown to select packages */}
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      const current = (editModal.package || '').split(', ').filter(Boolean);
+                      if (!current.includes(val)) {
+                        setEditModal({ ...editModal, package: [...current, val].join(', ') });
+                      }
+                    }}
+                    style={{ width: '100%', marginBottom: 8, padding: '10px 12px', borderRadius: 8, fontSize: '0.85rem' }}
+                  >
+                    <option value="">-- Dropdown to Select Packages --</option>
+                    {packages.map(p => {
+                      const selected = (editModal.package || '').split(', ').filter(Boolean).includes(p);
+                      return (
+                        <option key={p} value={p} disabled={selected}>
+                          {p} {selected ? '(Selected)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input type="text" placeholder="Type custom route & press +" value={editModal._customPkg || ''} onChange={(e) => setEditModal({ ...editModal, _customPkg: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter' && (editModal._customPkg || '').trim()) { e.preventDefault(); const val = editModal._customPkg.trim(); const current = (editModal.package || '').split(', ').filter(Boolean); if (!current.includes(val)) current.push(val); setEditModal({ ...editModal, package: current.join(', '), _customPkg: '' }); } }} style={{ flex: 1, padding: '10px 12px', fontSize: '0.85rem', borderRadius: 8 }} />
+                    <button type="button" onClick={() => { const val = (editModal._customPkg || '').trim(); if (!val) return; const current = (editModal.package || '').split(', ').filter(Boolean); if (!current.includes(val)) current.push(val); setEditModal({ ...editModal, package: current.join(', '), _customPkg: '' }); }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--cyan)', color: '#000', fontWeight: 700, fontSize: '1rem', minWidth: 44, minHeight: 40 }}>+</button>
+                  </div>
+                  {/* Selected Packages - Slide Down Panel */}
+                  {editModal.package && (
+                    <div style={{
+                      marginTop: 10, padding: '12px 14px',
+                      background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(6,182,212,0.08))',
+                      borderRadius: 12, border: '1px solid rgba(16,185,129,0.25)',
+                      animation: 'slideDownPkg 0.3s ease-out',
+                    }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--emerald)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        📦 Selected Packages ({(editModal.package || '').split(', ').filter(Boolean).length})
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {(editModal.package || '').split(', ').filter(Boolean).map((pkg, idx) => (
+                          <div key={pkg + idx} style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '8px 12px', borderRadius: 8,
+                            background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)',
+                            animation: 'slideInPkg 0.25s ease-out', animationDelay: `${idx * 0.05}s`, animationFillMode: 'both',
+                          }}>
+                            <span style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 500 }}>
+                              <span style={{ color: 'var(--cyan)', fontWeight: 700, marginRight: 6 }}>P{idx + 1}.</span>{pkg}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => { const current = (editModal.package || '').split(', ').filter(Boolean); const updated = current.filter(x => x !== pkg); setEditModal({ ...editModal, package: updated.join(', ') }); }}
+                              style={{
+                                background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)',
+                                color: '#f87171', borderRadius: '50%', width: 26, height: 26,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700,
+                                transition: 'all 0.15s ease', lineHeight: 1, padding: 0, flexShrink: 0,
+                              }}
+                              onMouseEnter={e => { e.target.style.background = 'rgba(239,68,68,0.5)'; e.target.style.color = '#fff'; }}
+                              onMouseLeave={e => { e.target.style.background = 'rgba(239,68,68,0.2)'; e.target.style.color = '#f87171'; }}
+                              title={`Remove ${pkg}`}
+                            >✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="row" style={{ marginBottom: 12 }}>
                   <input type="number" value={editModal.adults} onChange={e => setEditModal({ ...editModal, adults: e.target.value })} placeholder="Adults" style={{ width: 80 }} />
@@ -985,65 +1124,69 @@ export default function Dashboard() {
               <button className="btn-sm primary" onClick={exportToExcel}>📥 Export to Excel</button>
             </div>
           </div>
-          <div className="card" style={{ borderTop: '3px solid var(--emerald)', overflowX: 'auto' }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Added By</th><th>Client Name</th><th>Contact</th><th>Date</th><th>Time</th><th>Vehicle</th>
-                  <th>Package</th><th>Passengers</th><th>Luggage</th><th>Payment</th>
-                  <th>Driver</th><th>D.Contact</th><th>D.Vehicle</th><th>Reg No.</th><th>Commission</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {upcomingBookings.map(b => (
-                  <tr key={b.id}>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--cyan)', textTransform: 'capitalize', fontWeight: 'bold' }}>{(b.addedBy || 'Admin').split('@')[0]}</td>
-                    <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.bookingReferBy ? `Ref: ${b.bookingReferBy}` : ''}</span></td>
-                    <td>{b.clientContact || '-'}</td>
-                    <td>{b.date || '-'}</td>
-                    <td>{b.pickupTime || '-'}</td>
-                    <td>{b.vehicle || '-'}</td>
-                    <td>{b.package || '-'}</td>
-                    <td>{(b.adults || 0)} A, {(b.children || 0)} C</td>
-                    <td>{(b.luggageSuitcase || 0)}S {(b.luggageHandCarry || 0)}H {(b.luggageCarton || 0)}C {(b.luggageStroller || 0)}St {(b.luggageWheelchair || 0)}W</td>
-                    <td className="sar">{b.paymentSAR || 0} SAR</td>
-                    <td>{b.driverName || '-'}</td>
-                    <td>{b.driverContact || '-'}</td>
-                    <td>{b.driverVehicle || '-'}</td>
-                    <td>{b.driverRegNo || '-'}</td>
-                    <td className="sar">{b.commissionSAR || 0} SAR</td>
-                    <td style={{ minWidth: 160 }}>
-                      <button className="btn-sm primary" style={{ marginBottom: '5px', width: '100%' }} onClick={() => setAssignModal({
-                        id: b.id,
-                        driverId: b.driverId || '',
-                        driverName: b.driverName || '',
-                        driverContact: b.driverContact || '',
-                        driverVehicle: b.driverVehicle || '',
-                        driverRegNo: b.driverRegNo || '',
-                        shirqaName: b.shirqaName || '',
-                        referByName: b.referByName || '',
-                        referralContact: b.referralContact || '',
-                        commissionSAR: b.commissionSAR || ''
-                      })}>{b.driverName ? 'Update Driver' : 'Assign Driver'}</button>
-                      <br />
-                      {b.driverName && (
-                        <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={() => {
-                          setLastSavedBooking(b);
-                          setTimeout(downloadDriverVoucher, 500);
-                        }}> PDF</button>
-                      )}
-                      <br />
-                      <button className="btn-sm success" style={{ marginBottom: '5px', marginTop: '5px', width: '100%' }} onClick={() => handleCompleteBooking(b.id)}>✓ Confirm Pick</button>
-                      <br />
-                      <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000', marginBottom: '5px', width: '48%', marginRight: '4%' }} onClick={() => setEditModal(b)}>Edit</button>
-                      <button className="btn-sm danger" style={{ marginBottom: '5px', width: '48%' }} onClick={() => handleCancelBooking(b.id)}>Cancel</button>
-                    </td>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => scrollTable(upcomingRef, 'left')} style={{ position: 'absolute', left: -15, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 36, height: 36, borderRadius: '50%', background: 'var(--bg)', color: '#fff', border: '2px solid var(--cyan)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>❮</button>
+            <button onClick={() => scrollTable(upcomingRef, 'right')} style={{ position: 'absolute', right: -15, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 36, height: 36, borderRadius: '50%', background: 'var(--bg)', color: '#fff', border: '2px solid var(--cyan)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>❯</button>
+            <div className="card" ref={upcomingRef} style={{ borderTop: '3px solid var(--emerald)', overflowX: 'auto', margin: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Added By</th><th>Client Name</th><th>Contact</th><th>Date</th><th>Time</th><th>Vehicle</th>
+                    <th>Package</th><th>Passengers</th><th>Luggage</th><th>Payment</th>
+                    <th>Driver</th><th>D.Contact</th><th>D.Vehicle</th><th>Reg No.</th><th>Commission</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-                {upcomingBookings.length === 0 && <tr><td colSpan={16} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No upcoming bookings.</td></tr>}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {upcomingBookings.map(b => (
+                    <tr key={b.id}>
+                      <td style={{ fontSize: '0.8rem', color: 'var(--cyan)', textTransform: 'capitalize', fontWeight: 'bold' }}>{(b.addedBy || 'Admin').split('@')[0]}</td>
+                      <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.bookingReferBy ? `Ref: ${b.bookingReferBy}` : ''}</span></td>
+                      <td>{b.clientContact || '-'}</td>
+                      <td>{b.date || '-'}</td>
+                      <td>{b.pickupTime || '-'}</td>
+                      <td>{b.vehicle || '-'}</td>
+                      <td>{b.package || '-'}</td>
+                      <td>{(b.adults || 0)} A, {(b.children || 0)} C</td>
+                      <td>{(b.luggageSuitcase || 0)}S {(b.luggageHandCarry || 0)}H {(b.luggageCarton || 0)}C {(b.luggageStroller || 0)}St {(b.luggageWheelchair || 0)}W</td>
+                      <td className="sar">{b.paymentSAR || 0} SAR</td>
+                      <td>{b.driverName || '-'}</td>
+                      <td>{b.driverContact || '-'}</td>
+                      <td>{b.driverVehicle || '-'}</td>
+                      <td>{b.driverRegNo || '-'}</td>
+                      <td className="sar">{b.commissionSAR || 0} SAR</td>
+                      <td style={{ minWidth: 160 }}>
+                        <button className="btn-sm primary" style={{ marginBottom: '5px', width: '100%' }} onClick={() => setAssignModal({
+                          id: b.id,
+                          driverId: b.driverId || '',
+                          driverName: b.driverName || '',
+                          driverContact: b.driverContact || '',
+                          driverVehicle: b.driverVehicle || '',
+                          driverRegNo: b.driverRegNo || '',
+                          shirqaName: b.shirqaName || '',
+                          referByName: b.referByName || '',
+                          referralContact: b.referralContact || '',
+                          commissionSAR: b.commissionSAR || ''
+                        })}>{b.driverName ? 'Update Driver' : 'Assign Driver'}</button>
+                        <br />
+                        {b.driverName && (
+                          <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={() => {
+                            setLastSavedBooking(b);
+                            setTimeout(downloadDriverVoucher, 500);
+                          }}> PDF</button>
+                        )}
+                        <br />
+                        <button className="btn-sm success" style={{ marginBottom: '5px', marginTop: '5px', width: '100%' }} onClick={() => handleCompleteBooking(b.id)}>✓ Confirm Pick</button>
+                        <br />
+                        <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000', marginBottom: '5px', width: '48%', marginRight: '4%' }} onClick={() => setEditModal(b)}>Edit</button>
+                        <button className="btn-sm danger" style={{ marginBottom: '5px', width: '48%' }} onClick={() => handleCancelBooking(b.id)}>Cancel</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {upcomingBookings.length === 0 && <tr><td colSpan={16} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No upcoming bookings.</td></tr>}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -1052,49 +1195,53 @@ export default function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
             <h2 style={{ fontSize: '1.1rem', margin: 0 }}>📜 Past & Completed Bookings</h2>
           </div>
-          <div className="card" style={{ borderTop: '3px solid var(--pink)', overflowX: 'auto' }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Status</th><th>Added By</th><th>Client Name</th><th>Date</th><th>Item Details</th>
-                  <th>Payment</th><th>Driver / Commission</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pastBookings.map(b => (
-                  <tr key={b.id} style={{ opacity: b.status === 'cancelled' ? 0.6 : 1 }}>
-                    <td>
-                      <span className="badge" style={{ background: b.status === 'completed' ? 'var(--emerald)' : 'var(--danger)' }}>
-                        {b.status.toUpperCase()}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '0.8rem', color: 'var(--cyan)', textTransform: 'capitalize', fontWeight: 'bold' }}>{(b.addedBy || 'Admin').split('@')[0]}</td>
-                    <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.clientContact}</span><br /><span style={{ fontSize: '0.8rem', color: 'var(--amber)' }}>{b.bookingReferBy ? `Ref: ${b.bookingReferBy}` : ''}</span></td>
-                    <td>{b.date || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.pickupTime}</span></td>
-                    <td style={{ fontSize: '0.85rem' }}>
-                      🚗 {b.vehicle} | 📦 {b.package}<br />
-                      {b.paymentMode === 'Online' ? '💳 Online' : '💵 Cash'}
-                    </td>
-                    <td className="sar">
-                      Adv: {b.advanceSAR || 0}<br />
-                      Total: {b.paymentSAR || 0}
-                    </td>
-                    <td style={{ fontSize: '0.85rem' }}>
-                      {b.driverName || 'No Driver'}<br />
-                      <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: b.commissionReceived === 'Yes' ? 'var(--emerald)' : 'var(--amber)', cursor: 'pointer', marginTop: 4 }}>
-                        <input type="checkbox" checked={b.commissionReceived === 'Yes'} onChange={() => handleToggleCommission(b.id, b.commissionReceived)} />
-                        Comm: {b.commissionSAR || 0} ({b.commissionReceived === 'Yes' ? 'Received' : 'Pending'})
-                      </label>
-                    </td>
-                    <td style={{ minWidth: 100 }}>
-                      <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000', marginBottom: '5px', width: '100%' }} onClick={() => setEditModal(b)}>Edit</button>
-                    </td>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => scrollTable(pastRef, 'left')} style={{ position: 'absolute', left: -15, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 36, height: 36, borderRadius: '50%', background: 'var(--bg)', color: '#fff', border: '2px solid var(--pink)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>❮</button>
+            <button onClick={() => scrollTable(pastRef, 'right')} style={{ position: 'absolute', right: -15, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 36, height: 36, borderRadius: '50%', background: 'var(--bg)', color: '#fff', border: '2px solid var(--pink)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>❯</button>
+            <div className="card" ref={pastRef} style={{ borderTop: '3px solid var(--pink)', overflowX: 'auto', margin: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Status</th><th>Added By</th><th>Client Name</th><th>Date</th><th>Item Details</th>
+                    <th>Payment</th><th>Driver / Commission</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-                {pastBookings.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No past bookings.</td></tr>}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pastBookings.map(b => (
+                    <tr key={b.id} style={{ opacity: b.status === 'cancelled' ? 0.6 : 1 }}>
+                      <td>
+                        <span className="badge" style={{ background: b.status === 'completed' ? 'var(--emerald)' : 'var(--danger)' }}>
+                          {b.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.8rem', color: 'var(--cyan)', textTransform: 'capitalize', fontWeight: 'bold' }}>{(b.addedBy || 'Admin').split('@')[0]}</td>
+                      <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.clientContact}</span><br /><span style={{ fontSize: '0.8rem', color: 'var(--amber)' }}>{b.bookingReferBy ? `Ref: ${b.bookingReferBy}` : ''}</span></td>
+                      <td>{b.date || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.pickupTime}</span></td>
+                      <td style={{ fontSize: '0.85rem' }}>
+                        🚗 {b.vehicle} | 📦 {b.package}<br />
+                        {b.paymentMode === 'Online' ? '💳 Online' : '💵 Cash'}
+                      </td>
+                      <td className="sar">
+                        Adv: {b.advanceSAR || 0}<br />
+                        Total: {b.paymentSAR || 0}
+                      </td>
+                      <td style={{ fontSize: '0.85rem' }}>
+                        {b.driverName || 'No Driver'}<br />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: b.commissionReceived === 'Yes' ? 'var(--emerald)' : 'var(--amber)', cursor: 'pointer', marginTop: 4 }}>
+                          <input type="checkbox" checked={b.commissionReceived === 'Yes'} onChange={() => handleToggleCommission(b.id, b.commissionReceived)} />
+                          Comm: {b.commissionSAR || 0} ({b.commissionReceived === 'Yes' ? 'Received' : 'Pending'})
+                        </label>
+                      </td>
+                      <td style={{ minWidth: 100 }}>
+                        <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000', marginBottom: '5px', width: '100%' }} onClick={() => setEditModal(b)}>Edit</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {pastBookings.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No past bookings.</td></tr>}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -1103,70 +1250,74 @@ export default function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
             <h2 style={{ fontSize: '1.1rem', margin: 0 }}>💰 Driver Settlements & Balances</h2>
           </div>
-          <div className="card" style={{ borderTop: '3px solid var(--purple)', overflowX: 'auto' }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Driver Name</th>
-                  <th>Total Commission</th>
-                  <th>Total Paid</th>
-                  <th>Remaining (Net Owed)</th>
-                  <th>Record Payment</th>
-                </tr>
-              </thead>
-              <tbody>
-                {driverBalances.map((bal, idx) => (
-                  <tr key={idx}>
-                    <td style={{ fontWeight: 'bold' }}>{bal.driverName}</td>
-                    <td style={{ color: 'var(--amber)' }}>{bal.totalCommission}</td>
-                    <td style={{ color: 'var(--emerald)' }}>{bal.totalPaid}</td>
-                    <td style={{ color: bal.netOwed > 0 ? '#ff4d4d' : 'var(--emerald)', fontWeight: 'bold' }}>
-                      {bal.netOwed > 0 ? `${bal.netOwed} SAR (Driver Owes)` : bal.netOwed < 0 ? `${Math.abs(bal.netOwed)} SAR (Advance/Company Owes)` : '0 SAR'}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        <input type="number" id={`payInput_amt_${idx}`} placeholder="SAR" style={{ width: 80, padding: 6 }} min="1" />
-                        <select id={`payInput_mode_${idx}`} style={{ width: 90, padding: 6 }}>
-                          <option value="Cash">Cash</option>
-                          <option value="Online">Online</option>
-                        </select>
-                        <input type="text" id={`payInput_comment_${idx}`} placeholder="Add comment..." style={{ width: 140, padding: 6 }} />
-                        <button className="btn-sm primary" onClick={async () => {
-                          const amt = Number(document.getElementById(`payInput_amt_${idx}`).value);
-                          const mode = document.getElementById(`payInput_mode_${idx}`).value;
-                          const comment = document.getElementById(`payInput_comment_${idx}`).value;
-
-                          if (!amt || amt <= 0) { alert('Enter a valid amount.'); return; }
-                          if (!window.confirm(`Record ${amt} SAR payment by ${mode} from ${bal.driverName}?`)) return;
-
-                          try {
-                            await recordDriverPayment(bal.driverName, amt, mode, user, comment);
-                            document.getElementById(`payInput_amt_${idx}`).value = '';
-                            document.getElementById(`payInput_comment_${idx}`).value = '';
-                            loadData();
-                            alert('Payment recorded successfully!');
-                          } catch (err) {
-                            alert(err.message);
-                          }
-                        }}>
-                          Record
-                        </button>
-                        <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={async () => {
-                          try {
-                            const history = await getDriverPaymentHistory(bal.driverName);
-                            setSelectedDriverForHistory(bal.driverName);
-                            setPaymentHistoryModal(history);
-                          } catch (err) { alert('Failed to load history: ' + err.message); }
-                        }}>
-                          History
-                        </button>
-                      </div>
-                    </td>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => scrollTable(settlementRef, 'left')} style={{ position: 'absolute', left: -15, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 36, height: 36, borderRadius: '50%', background: 'var(--bg)', color: '#fff', border: '2px solid var(--purple)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>❮</button>
+            <button onClick={() => scrollTable(settlementRef, 'right')} style={{ position: 'absolute', right: -15, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 36, height: 36, borderRadius: '50%', background: 'var(--bg)', color: '#fff', border: '2px solid var(--purple)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>❯</button>
+            <div className="card" ref={settlementRef} style={{ borderTop: '3px solid var(--purple)', overflowX: 'auto', margin: 0 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Driver Name</th>
+                    <th>Total Commission</th>
+                    <th>Total Paid</th>
+                    <th>Remaining (Net Owed)</th>
+                    <th>Record Payment</th>
                   </tr>
-                ))}
-                {driverBalances.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No pending driver settlements.</td></tr>}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {driverBalances.map((bal, idx) => (
+                    <tr key={idx}>
+                      <td style={{ fontWeight: 'bold' }}>{bal.driverName}</td>
+                      <td style={{ color: 'var(--amber)' }}>{bal.totalCommission}</td>
+                      <td style={{ color: 'var(--emerald)' }}>{bal.totalPaid}</td>
+                      <td style={{ color: bal.netOwed > 0 ? '#ff4d4d' : 'var(--emerald)', fontWeight: 'bold' }}>
+                        {bal.netOwed > 0 ? `${bal.netOwed} SAR (Driver Owes)` : bal.netOwed < 0 ? `${Math.abs(bal.netOwed)} SAR (Advance/Company Owes)` : '0 SAR'}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input type="number" id={`payInput_amt_${idx}`} placeholder="SAR" style={{ width: 80, padding: 6 }} min="1" />
+                          <select id={`payInput_mode_${idx}`} style={{ width: 90, padding: 6 }}>
+                            <option value="Cash">Cash</option>
+                            <option value="Online">Online</option>
+                          </select>
+                          <input type="text" id={`payInput_comment_${idx}`} placeholder="Add comment..." style={{ width: 140, padding: 6 }} />
+                          <button className="btn-sm primary" onClick={async () => {
+                            const amt = Number(document.getElementById(`payInput_amt_${idx}`).value);
+                            const mode = document.getElementById(`payInput_mode_${idx}`).value;
+                            const comment = document.getElementById(`payInput_comment_${idx}`).value;
+
+                            if (!amt || amt <= 0) { alert('Enter a valid amount.'); return; }
+                            if (!window.confirm(`Record ${amt} SAR payment by ${mode} from ${bal.driverName}?`)) return;
+
+                            try {
+                              await recordDriverPayment(bal.driverName, amt, mode, user, comment);
+                              document.getElementById(`payInput_amt_${idx}`).value = '';
+                              document.getElementById(`payInput_comment_${idx}`).value = '';
+                              loadData();
+                              alert('Payment recorded successfully!');
+                            } catch (err) {
+                              alert(err.message);
+                            }
+                          }}>
+                            Record
+                          </button>
+                          <button className="btn-sm" style={{ background: 'var(--cyan)', color: '#000' }} onClick={async () => {
+                            try {
+                              const history = await getDriverPaymentHistory(bal.driverName);
+                              setSelectedDriverForHistory(bal.driverName);
+                              setPaymentHistoryModal(history);
+                            } catch (err) { alert('Failed to load history: ' + err.message); }
+                          }}>
+                            History
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {driverBalances.length === 0 && <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No pending driver settlements.</td></tr>}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 

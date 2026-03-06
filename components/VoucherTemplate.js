@@ -218,26 +218,36 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
           <label>SPECIAL REQUEST</label>
           <div className="pdf-fake-field">{bookingData.specialRequest || '-'}</div>
         </div>
-        <div className="pdf-grid-item">
-          <label>SUITCASE</label>
-          <div className="pdf-fake-field">{bookingData.luggageSuitcase || 0}</div>
-        </div>
-        <div className="pdf-grid-item">
-          <label>HAND CARRY</label>
-          <div className="pdf-fake-field">{bookingData.luggageHandCarry || 0}</div>
-        </div>
-        <div className="pdf-grid-item">
-          <label>CARTON</label>
-          <div className="pdf-fake-field">{bookingData.luggageCarton || 0}</div>
-        </div>
-        <div className="pdf-grid-item">
-          <label>STROLLER</label>
-          <div className="pdf-fake-field">{bookingData.luggageStroller || 0}</div>
-        </div>
-        <div className="pdf-grid-item">
-          <label>WHEELCHAIR</label>
-          <div className="pdf-fake-field">{bookingData.luggageWheelchair || 0}</div>
-        </div>
+        {Number(bookingData.luggageSuitcase) > 0 && (
+          <div className="pdf-grid-item">
+            <label>SUITCASE</label>
+            <div className="pdf-fake-field">{bookingData.luggageSuitcase}</div>
+          </div>
+        )}
+        {Number(bookingData.luggageHandCarry) > 0 && (
+          <div className="pdf-grid-item">
+            <label>HAND CARRY</label>
+            <div className="pdf-fake-field">{bookingData.luggageHandCarry}</div>
+          </div>
+        )}
+        {Number(bookingData.luggageCarton) > 0 && (
+          <div className="pdf-grid-item">
+            <label>CARTON</label>
+            <div className="pdf-fake-field">{bookingData.luggageCarton}</div>
+          </div>
+        )}
+        {Number(bookingData.luggageStroller) > 0 && (
+          <div className="pdf-grid-item">
+            <label>STROLLER</label>
+            <div className="pdf-fake-field">{bookingData.luggageStroller}</div>
+          </div>
+        )}
+        {Number(bookingData.luggageWheelchair) > 0 && (
+          <div className="pdf-grid-item">
+            <label>WHEELCHAIR</label>
+            <div className="pdf-fake-field">{bookingData.luggageWheelchair}</div>
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '16px', border: '1px solid #e2e8f0', borderRadius: '8px', marginTop: '12px', zIndex: 1, position: 'relative', background: 'rgba(255,255,255,0.7)' }}>

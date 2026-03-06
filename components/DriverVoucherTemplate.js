@@ -221,12 +221,20 @@ export default function DriverVoucherTemplate({ driverData, pdfRef }) {
                         <label>Passenger Location</label>
                         <div className="pdf-fake-field">{driverData.pickupLocation || '-'}</div>
                     </div>
-                    <div className="pdf-grid-item" style={{ gridColumn: "span 3" }}>
-                        <label>Luggage Details</label>
-                        <div className="pdf-fake-field">
-                            {driverData.luggageSuitcase || 0}S {driverData.luggageHandCarry || 0}H {driverData.luggageCarton || 0}C {driverData.luggageStroller || 0}St {driverData.luggageWheelchair || 0}W
+                    {(Number(driverData.luggageSuitcase) > 0 || Number(driverData.luggageHandCarry) > 0 || Number(driverData.luggageCarton) > 0 || Number(driverData.luggageStroller) > 0 || Number(driverData.luggageWheelchair) > 0) && (
+                        <div className="pdf-grid-item" style={{ gridColumn: "span 3" }}>
+                            <label>Luggage Details</label>
+                            <div className="pdf-fake-field">
+                                {[
+                                    Number(driverData.luggageSuitcase) > 0 ? `${driverData.luggageSuitcase}S` : '',
+                                    Number(driverData.luggageHandCarry) > 0 ? `${driverData.luggageHandCarry}H` : '',
+                                    Number(driverData.luggageCarton) > 0 ? `${driverData.luggageCarton}C` : '',
+                                    Number(driverData.luggageStroller) > 0 ? `${driverData.luggageStroller}St` : '',
+                                    Number(driverData.luggageWheelchair) > 0 ? `${driverData.luggageWheelchair}W` : '',
+                                ].filter(Boolean).join(' ')}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 

@@ -55,29 +55,42 @@ export default function Dashboard() {
       const { jsPDF } = await import('jspdf');
       const { default: html2canvas } = await import('html2canvas');
 
-      const canvas = await html2canvas(pdfRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: -window.scrollY,
-        windowWidth: 960,
-        onclone: (clonedDoc, clonedEl) => {
-          // Fix the cloned element to be visible in the cloned document
-          clonedEl.style.position = 'static';
-          clonedEl.style.top = 'auto';
-          clonedEl.style.left = 'auto';
-          clonedEl.style.width = '900px';
-          clonedEl.style.opacity = '1';
-          clonedEl.style.zIndex = '1';
-        }
-      });
+      const pageElements = Array.from(pdfRef.current.querySelectorAll('.pdf-page'));
+      const targets = pageElements.length ? pageElements : [pdfRef.current];
+      let pdf = null;
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
-      const imgW = canvas.width;
-      const imgH = canvas.height;
-      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [imgW, imgH] });
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, undefined, 'FAST');
+      for (let i = 0; i < targets.length; i++) {
+        const canvas = await html2canvas(targets[i], {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: -window.scrollY,
+          windowWidth: 960,
+          onclone: (clonedDoc, clonedEl) => {
+            clonedEl.style.position = 'static';
+            clonedEl.style.top = 'auto';
+            clonedEl.style.left = 'auto';
+            clonedEl.style.width = '900px';
+            clonedEl.style.opacity = '1';
+            clonedEl.style.zIndex = '1';
+          }
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const imgW = canvas.width;
+        const imgH = canvas.height;
+
+        if (!pdf) {
+          pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [imgW, imgH] });
+        } else {
+          pdf.addPage([imgW, imgH], 'p');
+        }
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, undefined, 'FAST');
+      }
+
+      if (!pdf) return;
       pdf.save(`SmartWay_Voucher_${lastSavedBooking?.date || 'Download'}.pdf`);
 
     } catch (err) {
@@ -92,28 +105,42 @@ export default function Dashboard() {
       const { jsPDF } = await import('jspdf');
       const { default: html2canvas } = await import('html2canvas');
 
-      const canvas = await html2canvas(driverPdfRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        scrollX: 0,
-        scrollY: -window.scrollY,
-        windowWidth: 960,
-        onclone: (clonedDoc, clonedEl) => {
-          clonedEl.style.position = 'static';
-          clonedEl.style.top = 'auto';
-          clonedEl.style.left = 'auto';
-          clonedEl.style.width = '900px';
-          clonedEl.style.opacity = '1';
-          clonedEl.style.zIndex = '1';
-        }
-      });
+      const pageElements = Array.from(driverPdfRef.current.querySelectorAll('.pdf-page'));
+      const targets = pageElements.length ? pageElements : [driverPdfRef.current];
+      let pdf = null;
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
-      const imgW = canvas.width;
-      const imgH = canvas.height;
-      const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [imgW, imgH] });
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, undefined, 'FAST');
+      for (let i = 0; i < targets.length; i++) {
+        const canvas = await html2canvas(targets[i], {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: -window.scrollY,
+          windowWidth: 960,
+          onclone: (clonedDoc, clonedEl) => {
+            clonedEl.style.position = 'static';
+            clonedEl.style.top = 'auto';
+            clonedEl.style.left = 'auto';
+            clonedEl.style.width = '900px';
+            clonedEl.style.opacity = '1';
+            clonedEl.style.zIndex = '1';
+          }
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const imgW = canvas.width;
+        const imgH = canvas.height;
+
+        if (!pdf) {
+          pdf = new jsPDF({ orientation: 'p', unit: 'px', format: [imgW, imgH] });
+        } else {
+          pdf.addPage([imgW, imgH], 'p');
+        }
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH, undefined, 'FAST');
+      }
+
+      if (!pdf) return;
       pdf.save(`SmartWay_Driver_Voucher_${lastSavedBooking?.date || 'Download'}.pdf`);
 
     } catch (err) {

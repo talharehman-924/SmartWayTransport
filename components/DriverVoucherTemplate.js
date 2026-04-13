@@ -13,19 +13,25 @@ export default function DriverVoucherTemplate({ driverData, pdfRef }) {
             color: '#1e293b',
             fontFamily: "'Inter', 'Roboto', sans-serif",
             lineHeight: 1.5,
-            padding: '40px',
             boxSizing: 'border-box'
         }}>
             <style>{`
+            .pdf-page {
+                position: relative;
+                min-height: 1200px;
+                padding: 40px;
+                box-sizing: border-box;
+            }
             .pdf-watermark {
                 position: absolute;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                opacity: 0.1;
+                opacity: 0.12;
                 pointer-events: none;
                 z-index: 0;
-                width: 60%;
+                width: 48%;
+                max-width: 420px;
             }
             .pdf-header {
                 display: flex;
@@ -136,7 +142,35 @@ export default function DriverVoucherTemplate({ driverData, pdfRef }) {
                 width: 16px;
                 height: 16px;
             }
+            .pdf-terms-box {
+                position: relative;
+                z-index: 1;
+                border: 1px solid #cbd5e1;
+                border-radius: 10px;
+                padding: 18px;
+                background: rgba(255,255,255,0.85);
+                margin-bottom: 14px;
+            }
+            .pdf-terms-title {
+                font-size: 16px;
+                font-weight: 800;
+                color: #0f172a;
+                margin-bottom: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+            .pdf-terms-list {
+                margin: 0;
+                padding-left: 18px;
+                color: #334155;
+                font-size: 13px;
+            }
+            .pdf-terms-list li {
+                margin-bottom: 8px;
+            }
            `}</style>
+
+            <div className="pdf-page">
 
             <img className="pdf-watermark" src="/output-onlinepngtools.png" alt="Logo Watermark" />
 
@@ -324,6 +358,45 @@ export default function DriverVoucherTemplate({ driverData, pdfRef }) {
                     <div className="pdf-contact-item">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
                         SmartwayTransport7
+                    </div>
+                </div>
+            </div>
+
+            </div>
+
+            <div className="pdf-page">
+                <img className="pdf-watermark" src="/output-onlinepngtools.png" alt="Logo Watermark" />
+
+                <div className="pdf-header">
+                    <img src="/output-onlinepngtools.png" alt="Company Logo" />
+                    <div className="pdf-title">DRIVER NOTES</div>
+                </div>
+
+                <div className="pdf-terms-box">
+                    <div className="pdf-terms-title">Operational Instructions</div>
+                    <ol className="pdf-terms-list">
+                        <li>Driver must report on time and keep contact active before pickup.</li>
+                        <li>Verify passenger name, contact, and pickup location before starting trip.</li>
+                        <li>Maintain trip discipline and avoid route changes without operations approval.</li>
+                        <li>Luggage handling should match declared voucher items and passenger safety.</li>
+                        <li>In case of passenger no-show or cancellation, inform dispatch immediately.</li>
+                        <li>Commission settlement will follow booking status and payment confirmation.</li>
+                    </ol>
+                </div>
+
+                <div className="pdf-terms-box">
+                    <div className="pdf-terms-title">Special Note</div>
+                    <div style={{ fontSize: '13px', color: '#334155' }}>
+                        {driverData.specialRequest
+                            ? `Passenger special request: ${driverData.specialRequest}`
+                            : 'No special instructions for this ride. Follow standard SmartWay operating SOP.'}
+                    </div>
+                </div>
+
+                <div className="pdf-footer">
+                    <div className="pdf-footer-title">SMARTWAY TRANSPORT</div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        This instruction page is attached with the main driver voucher.
                     </div>
                 </div>
             </div>

@@ -13,19 +13,25 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
       color: '#1e293b',
       fontFamily: "'Inter', 'Roboto', sans-serif",
       lineHeight: 1.5,
-      padding: '40px',
       boxSizing: 'border-box'
     }}>
       <style>{`
+            .pdf-page {
+                position: relative;
+                min-height: 1200px;
+                padding: 40px;
+                box-sizing: border-box;
+            }
             .pdf-watermark {
                 position: absolute;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                opacity: 0.1;
+                opacity: 0.12;
                 pointer-events: none;
                 z-index: 0;
-                width: 60%;
+                width: 48%;
+                max-width: 420px;
             }
             .pdf-header {
                 display: flex;
@@ -136,7 +142,35 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
                 width: 16px;
                 height: 16px;
             }
+            .pdf-terms-box {
+              position: relative;
+              z-index: 1;
+              border: 1px solid #cbd5e1;
+              border-radius: 10px;
+              padding: 18px;
+              background: rgba(255,255,255,0.85);
+              margin-bottom: 14px;
+            }
+            .pdf-terms-title {
+              font-size: 16px;
+              font-weight: 800;
+              color: #0f172a;
+              margin-bottom: 10px;
+              text-transform: uppercase;
+              letter-spacing: 0.04em;
+            }
+            .pdf-terms-list {
+              margin: 0;
+              padding-left: 18px;
+              color: #334155;
+              font-size: 13px;
+            }
+            .pdf-terms-list li {
+              margin-bottom: 8px;
+            }
            `}</style>
+
+          <div className="pdf-page">
       <img className="pdf-watermark" src="/output-onlinepngtools.png" alt="Logo Watermark" />
 
       <div className="pdf-header">
@@ -325,6 +359,47 @@ export default function VoucherTemplate({ bookingData, pdfRef }) {
           <div className="pdf-contact-item">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
             SmartwayTransport7
+          </div>
+        </div>
+      </div>
+
+      </div>
+
+      <div className="pdf-page">
+        <img className="pdf-watermark" src="/output-onlinepngtools.png" alt="Logo Watermark" />
+
+        <div className="pdf-header">
+          <img src="/output-onlinepngtools.png" alt="Company Logo" />
+          <div className="pdf-title">TERMS & CONDITIONS</div>
+        </div>
+
+        <div className="pdf-terms-box">
+          <div className="pdf-terms-title">Rules & Regulations</div>
+          <ol className="pdf-terms-list">
+            <li>Passenger pickup timing must be respected. Delays may affect trip sequence and waiting charges may apply.</li>
+            <li>Any route change after dispatch may result in additional charges as per distance and time.</li>
+            <li>Child seats and special assistance must be requested at the time of booking confirmation.</li>
+            <li>Luggage allowance is handled as declared on voucher. Excess luggage is subject to vehicle capacity.</li>
+            <li>For airport transfers, passenger must share accurate terminal and flight details before pickup.</li>
+            <li>Cancellation requests should be communicated as early as possible to avoid operational losses.</li>
+            <li>Payment confirmation and balance settlement must be completed as per agreed terms.</li>
+            <li>Driver details are operational and may change due to logistics without affecting service commitment.</li>
+          </ol>
+        </div>
+
+        <div className="pdf-terms-box">
+          <div className="pdf-terms-title">Special Note</div>
+          <div style={{ fontSize: '13px', color: '#334155' }}>
+            {bookingData.specialRequest
+              ? `Passenger special request: ${bookingData.specialRequest}`
+              : 'No special note provided. Please coordinate with operations team for any urgent travel updates.'}
+          </div>
+        </div>
+
+        <div className="pdf-footer">
+          <div className="pdf-footer-title">SMARTWAY TRANSPORT</div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>
+            This page is an official part of your voucher and should be read with the booking details page.
           </div>
         </div>
       </div>

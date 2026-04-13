@@ -27,6 +27,13 @@ export default function Dashboard() {
   const [showChangePwd, setShowChangePwd] = useState(false);
   const [pwdMsg, setPwdMsg] = useState({ text: '', color: '' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [activePanel, setActivePanel] = useState('bookings');
+  const [bookingViewTab, setBookingViewTab] = useState('pending');
+  const [pendingDateFilter, setPendingDateFilter] = useState('all');
+  const [customFromDate, setCustomFromDate] = useState('');
+  const [customToDate, setCustomToDate] = useState('');
+  const [selectedBookingDriver, setSelectedBookingDriver] = useState('all');
+  const [driverSearchQuery, setDriverSearchQuery] = useState('');
 
   const upcomingRef = useRef(null);
   const pastRef = useRef(null);
@@ -360,6 +367,19 @@ export default function Dashboard() {
     }
   }
 
+  async function handleMarkPaidAndComplete(id, commissionReceived) {
+    if (!confirm('Mark commission as received and move this booking to completed?')) return;
+    try {
+      if (commissionReceived !== 'Yes') {
+        await toggleCommissionStatus(id, 'Yes');
+      }
+      await updateBookingStatus(id, 'completed');
+      await loadData();
+    } catch (e) {
+      alert('Failed to complete booking with payment: ' + e.message);
+    }
+  }
+
   async function handleApprove(uid) {
     if (!confirm('Grant access to this user?')) return;
     await approveUser(uid);
@@ -397,6 +417,10 @@ export default function Dashboard() {
   const getLocalISODate = (d) => new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 10);
 
   const currentMonth = getLocalISODate(now).slice(0, 7);
+  const todayStr = getLocalISODate(now);
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const tomorrowStr = getLocalISODate(tomorrow);
 
   const weekStart = new Date(now);
   // Using Sunday as the start of the week for Middle East standard.
@@ -416,35 +440,7 @@ export default function Dashboard() {
 
   const sortedBookings = [...bookings].sort((a, b) => (a.date + (a.pickupTime || '')).localeCompare(b.date + (b.pickupTime || '')));
 
-  const isPastBooking = (b) => {
-    if (b.status === 'completed' || b.status === 'cancelled') return true;
-    if (b.driverName && b.date) {
-      // The pickupTime comes in like "10:30 AM" or "16:55 PM"
-      let dtStr = b.date;
-      if (b.pickupTime) {
-        let pTime = String(b.pickupTime).trim();
-        // Basic cleaning in case it contains redundant PM logic like "16:55 PM"
-        const match = pTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-        if (match) {
-          let [_, h, m, ampm] = match;
-          let hi = parseInt(h);
-          if (ampm) {
-            ampm = ampm.toUpperCase();
-            if (ampm === 'PM' && hi < 12) hi += 12;
-            if (ampm === 'AM' && hi === 12) hi = 0;
-          }
-          dtStr += `T${String(hi).padStart(2, '0')}:${m}:00`;
-        } else {
-          dtStr += 'T23:59:59';
-        }
-      } else {
-        dtStr += 'T23:59:59';
-      }
-      const dt = new Date(dtStr);
-      if (dt < now) return true;
-    }
-    return false;
-  };
+  const isPastBooking = (b) => b.status === 'completed' || b.status === 'cancelled';
 
   const passesSearch = (b) => {
     if (!searchQuery) return true;
@@ -457,8 +453,69 @@ export default function Dashboard() {
     return searchable.includes(q);
   };
 
-  const upcomingBookings = sortedBookings.filter(b => !isPastBooking(b) && passesSearch(b));
-  const pastBookings = sortedBookings.filter(b => isPastBooking(b) && passesSearch(b));
+  const passesDriverSearch = (d) => {
+    if (!driverSearchQuery) return true;
+    const q = driverSearchQuery.toLowerCase();
+    const searchable = [
+      d.name,
+      d.contact,
+      d.vehicleName,
+      d.vehicleNumber,
+      d.shirqaName,
+      d.referByName,
+      d.referralContact
+    ].map(s => (s || '').toLowerCase()).join(' ');
+    return searchable.includes(q);
+  };
+
+  const bookingDriverOptions = Array.from(new Set([
+    ...driversList.map(d => (d.name || '').trim()),
+    ...bookings.map(b => (b.driverName || '').trim())
+  ].filter(Boolean))).sort((a, b) => a.localeCompare(b));
+
+  const selectedDriverAllRecords = bookings.filter(b => (
+    selectedBookingDriver === 'all' || (b.driverName || '').trim() === selectedBookingDriver
+  ));
+  const selectedDriverPendingRides = selectedDriverAllRecords.filter(b => b.status !== 'completed' && b.status !== 'cancelled').length;
+  const selectedDriverCompletedRides = selectedDriverAllRecords.filter(b => b.status === 'completed').length;
+  const selectedDriverCancelledRides = selectedDriverAllRecords.filter(b => b.status === 'cancelled').length;
+  const selectedDriverPendingCommission = selectedDriverAllRecords.reduce((sum, b) => {
+    if (b.commissionReceived === 'Yes') return sum;
+    return sum + (Number(b.commissionSAR) || 0);
+  }, 0);
+
+  const bookingRecords = sortedBookings
+    .filter(passesSearch)
+    .filter(b => selectedBookingDriver === 'all' || (b.driverName || '').trim() === selectedBookingDriver);
+  const upcomingBookings = bookingRecords.filter(b => !isPastBooking(b));
+  const confirmedBookings = bookingRecords.filter(b => b.status === 'completed');
+  const cancelledBookings = bookingRecords.filter(b => b.status === 'cancelled');
+  const todayPendingCount = upcomingBookings.filter(b => b.date === todayStr).length;
+  const tomorrowPendingCount = upcomingBookings.filter(b => b.date === tomorrowStr).length;
+  const weekPendingCount = upcomingBookings.filter(b => b.date && b.date >= weekStartStr && b.date <= weekEndStr).length;
+  const hasInvalidCustomRange = !!(customFromDate && customToDate && customFromDate > customToDate);
+  const isWithinCustomRange = (dateStr) => {
+    if (!dateStr) return false;
+    if (customFromDate && dateStr < customFromDate) return false;
+    if (customToDate && dateStr > customToDate) return false;
+    return true;
+  };
+  const customPendingCount = hasInvalidCustomRange
+    ? upcomingBookings.length
+    : upcomingBookings.filter(b => isWithinCustomRange(b.date)).length;
+  const dateFilteredUpcomingBookings = upcomingBookings.filter(b => {
+    if (pendingDateFilter === 'today') return b.date === todayStr;
+    if (pendingDateFilter === 'tomorrow') return b.date === tomorrowStr;
+    if (pendingDateFilter === 'week') return b.date && b.date >= weekStartStr && b.date <= weekEndStr;
+    if (pendingDateFilter === 'custom') return hasInvalidCustomRange ? true : isWithinCustomRange(b.date);
+    return true;
+  });
+  const pastBookings = bookingViewTab === 'confirmed'
+    ? confirmedBookings
+    : bookingViewTab === 'cancelled'
+      ? cancelledBookings
+      : [...confirmedBookings, ...cancelledBookings];
+  const filteredDriversList = driversList.filter(passesDriverSearch);
 
   if (!user) return null;
 
@@ -496,7 +553,20 @@ export default function Dashboard() {
           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
         }}>🚀 Admin Dashboard</h1>
 
+        <section style={{ marginBottom: 24 }}>
+          <div className="card" style={{ borderTop: '3px solid var(--cyan)', padding: 12 }}>
+            <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+              <button className="btn-sm" style={{ background: activePanel === 'bookings' ? 'var(--cyan)' : 'rgba(255,255,255,0.08)', color: activePanel === 'bookings' ? '#000' : '#fff' }} onClick={() => setActivePanel('bookings')}>Passengers / Bookings</button>
+              <button className="btn-sm" style={{ background: activePanel === 'drivers' ? 'var(--emerald)' : 'rgba(255,255,255,0.08)', color: activePanel === 'drivers' ? '#000' : '#fff' }} onClick={() => setActivePanel('drivers')}>Drivers</button>
+              <button className="btn-sm" style={{ background: activePanel === 'new' ? 'var(--purple)' : 'rgba(255,255,255,0.08)', color: '#fff' }} onClick={() => setActivePanel('new')}>Add Data / New Booking</button>
+              <button className="btn-sm" style={{ background: activePanel === 'users' ? 'var(--amber)' : 'rgba(255,255,255,0.08)', color: activePanel === 'users' ? '#000' : '#fff' }} onClick={() => setActivePanel('users')}>Users</button>
+              <button className="btn-sm" style={{ background: activePanel === 'overview' ? 'var(--pink)' : 'rgba(255,255,255,0.08)', color: '#fff' }} onClick={() => setActivePanel('overview')}>Overview</button>
+            </div>
+          </div>
+        </section>
+
         {/* Admin Stats */}
+        {activePanel === 'overview' && (
         <section style={{ marginBottom: 36 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginBottom: 28 }}>
             <div style={{
@@ -531,6 +601,7 @@ export default function Dashboard() {
             </div>
           </div>
         </section>
+        )}
 
         {/* Change Password (member only) */}
         {showChangePwd && role === 'member' && (
@@ -552,7 +623,7 @@ export default function Dashboard() {
 
 
         {/* User Management (admin only) */}
-        {role === 'admin' && (
+        {role === 'admin' && activePanel === 'users' && (
           <section style={{ marginBottom: 36 }}>
             <h2 style={{ fontSize: '1.1rem', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
               👥 User Management <span className="pending-count" style={{ background: 'var(--cyan)' }}>{allUsers.length}</span>
@@ -595,6 +666,7 @@ export default function Dashboard() {
           </section>
         )}
         {/* Admin Master (vehicles, packages, drivers) — admin only */}
+        {activePanel === 'new' && (
         <section style={{ marginBottom: 36 }}>
           <h2 style={{ fontSize: '1.1rem', marginBottom: 14 }}>⚙️ Add New (Vehicles, Packages, Drivers)</h2>
           <div className="card" style={{ borderTop: '3px solid var(--purple)' }}>
@@ -631,11 +703,20 @@ export default function Dashboard() {
             </div>
           </div>
         </section>
+        )}
 
         {/* Manage Drivers */}
+        {activePanel === 'drivers' && (
         <section style={{ marginBottom: 36, position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
             <h2 style={{ fontSize: '1.1rem', margin: 0 }}>🚚 Manage Drivers</h2>
+            <input
+              type="text"
+              placeholder="🔍 Search driver, contact, vehicle..."
+              value={driverSearchQuery}
+              onChange={e => setDriverSearchQuery(e.target.value)}
+              style={{ minWidth: 280, borderRadius: 8, padding: '8px 16px' }}
+            />
           </div>
           <div className="card" style={{ borderTop: '3px solid var(--purple)', overflowX: 'auto' }}>
             <table>
@@ -651,7 +732,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {driversList.map(d => (
+                {filteredDriversList.map(d => (
                   <tr key={d.id}>
                     <td style={{ fontWeight: 'bold' }}>{d.name}</td>
                     <td>{d.contact || '-'}</td>
@@ -665,7 +746,7 @@ export default function Dashboard() {
                     </td>
                   </tr>
                 ))}
-                {driversList.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No drivers found.</td></tr>}
+                {filteredDriversList.length === 0 && <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No drivers found.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -699,8 +780,10 @@ export default function Dashboard() {
             </div>
           )}
         </section>
+        )}
 
         {/* New Booking Interface for Admin */}
+        {activePanel === 'new' && (
         <section style={{ marginBottom: 36 }}>
           <h2 style={{ fontSize: '1.1rem', marginBottom: 14 }}>✨ New Booking</h2>
           <div className="card" style={{ borderTop: '3px solid var(--cyan)' }}>
@@ -913,11 +996,77 @@ export default function Dashboard() {
             )}
           </div>
         </section>
+        )}
         {/* End Admin Views */}
 
 
         {/* Bookings Table (admin only) */}
+        {activePanel === 'bookings' && (
         <section style={{ marginBottom: 36, position: 'relative' }}>
+          <div className="card" style={{ borderTop: '3px solid var(--cyan)', marginBottom: 14 }}>
+            <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+              <button className="btn-sm" style={{ background: bookingViewTab === 'pending' ? 'var(--cyan)' : 'rgba(255,255,255,0.08)', color: bookingViewTab === 'pending' ? '#000' : '#fff' }} onClick={() => setBookingViewTab('pending')}>Pending ({upcomingBookings.length})</button>
+              <button className="btn-sm" style={{ background: bookingViewTab === 'confirmed' ? 'var(--emerald)' : 'rgba(255,255,255,0.08)', color: bookingViewTab === 'confirmed' ? '#000' : '#fff' }} onClick={() => setBookingViewTab('confirmed')}>Confirmed ({confirmedBookings.length})</button>
+              <button className="btn-sm" style={{ background: bookingViewTab === 'cancelled' ? 'var(--danger)' : 'rgba(255,255,255,0.08)', color: '#fff' }} onClick={() => setBookingViewTab('cancelled')}>Cancelled ({cancelledBookings.length})</button>
+              <button className="btn-sm" style={{ background: bookingViewTab === 'all' ? 'var(--purple)' : 'rgba(255,255,255,0.08)', color: '#fff' }} onClick={() => setBookingViewTab('all')}>All</button>
+            </div>
+            <div className="row" style={{ gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+              <select value={selectedBookingDriver} onChange={e => setSelectedBookingDriver(e.target.value)} style={{ minWidth: 260 }}>
+                <option value="all">All Drivers</option>
+                {bookingDriverOptions.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+              {selectedBookingDriver !== 'all' && (
+                <button className="btn-sm" style={{ background: 'rgba(255,255,255,0.08)' }} onClick={() => setSelectedBookingDriver('all')}>
+                  Clear Driver Filter
+                </button>
+              )}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginTop: 10 }}>
+              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.35)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--cyan)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pending Rides</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{selectedDriverPendingRides}</div>
+              </div>
+              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--emerald)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Completed Rides</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{selectedDriverCompletedRides}</div>
+              </div>
+              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)' }}>
+                <div style={{ fontSize: '0.75rem', color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cancelled Rides</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{selectedDriverCancelledRides}</div>
+              </div>
+              <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.35)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--amber)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pending Commission</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{selectedDriverPendingCommission} SAR</div>
+              </div>
+            </div>
+          </div>
+
+          {(bookingViewTab === 'pending' || bookingViewTab === 'all') && (
+            <div className="card" style={{ borderTop: '3px solid var(--emerald)', marginBottom: 14 }}>
+              <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+                <button className="btn-sm" style={{ background: pendingDateFilter === 'all' ? 'var(--emerald)' : 'rgba(255,255,255,0.08)', color: pendingDateFilter === 'all' ? '#000' : '#fff' }} onClick={() => setPendingDateFilter('all')}>All Dates ({upcomingBookings.length})</button>
+                <button className="btn-sm" style={{ background: pendingDateFilter === 'today' ? 'var(--cyan)' : 'rgba(255,255,255,0.08)', color: pendingDateFilter === 'today' ? '#000' : '#fff' }} onClick={() => setPendingDateFilter('today')}>Today ({todayPendingCount})</button>
+                <button className="btn-sm" style={{ background: pendingDateFilter === 'tomorrow' ? 'var(--amber)' : 'rgba(255,255,255,0.08)', color: pendingDateFilter === 'tomorrow' ? '#000' : '#fff' }} onClick={() => setPendingDateFilter('tomorrow')}>Tomorrow ({tomorrowPendingCount})</button>
+                <button className="btn-sm" style={{ background: pendingDateFilter === 'week' ? 'var(--purple)' : 'rgba(255,255,255,0.08)', color: '#fff' }} onClick={() => setPendingDateFilter('week')}>This Week ({weekPendingCount})</button>
+                <button className="btn-sm" style={{ background: pendingDateFilter === 'custom' ? 'var(--pink)' : 'rgba(255,255,255,0.08)', color: '#fff' }} onClick={() => setPendingDateFilter('custom')}>Custom Range ({customPendingCount})</button>
+              </div>
+              <div className="row" style={{ gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+                <input type="date" value={customFromDate} onChange={e => setCustomFromDate(e.target.value)} style={{ minWidth: 170 }} />
+                <input type="date" value={customToDate} onChange={e => setCustomToDate(e.target.value)} style={{ minWidth: 170 }} />
+                <button className="btn-sm" style={{ background: 'rgba(255,255,255,0.08)' }} onClick={() => { setCustomFromDate(''); setCustomToDate(''); setPendingDateFilter('all'); }}>Reset Dates</button>
+              </div>
+              {hasInvalidCustomRange && (
+                <p style={{ marginTop: 10, marginBottom: 0, fontSize: '0.85rem', color: '#fda4af' }}>
+                  Invalid range: From Date cannot be after To Date. Showing all pending bookings until range is corrected.
+                </p>
+              )}
+            </div>
+          )}
+
+          {(bookingViewTab === 'pending' || bookingViewTab === 'all') && (
+          <>
           {assignModal && (
             <div style={{
               position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -1138,7 +1287,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {upcomingBookings.map(b => (
+                  {dateFilteredUpcomingBookings.map(b => (
                     <tr key={b.id}>
                       <td style={{ fontSize: '0.8rem', color: 'var(--cyan)', textTransform: 'capitalize', fontWeight: 'bold' }}>{(b.addedBy || 'Admin').split('@')[0]}</td>
                       <td>{b.clientName || '-'}<br /><span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{b.bookingReferBy ? `Ref: ${b.bookingReferBy}` : ''}</span></td>
@@ -1176,24 +1325,32 @@ export default function Dashboard() {
                           }}> PDF</button>
                         )}
                         <br />
-                        <button className="btn-sm success" style={{ marginBottom: '5px', marginTop: '5px', width: '100%' }} onClick={() => handleCompleteBooking(b.id)}>✓ Confirm Pick</button>
+                        <button className="btn-sm success" style={{ marginBottom: '5px', marginTop: '5px', width: '100%' }} onClick={() => handleCompleteBooking(b.id)}>✓ Confirm Ride</button>
+                        <br />
+                        <button className="btn-sm" style={{ background: 'var(--emerald)', color: '#000', marginBottom: '5px', width: '100%' }} onClick={() => handleMarkPaidAndComplete(b.id, b.commissionReceived)}>💰 Payment Received + Complete</button>
                         <br />
                         <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000', marginBottom: '5px', width: '48%', marginRight: '4%' }} onClick={() => setEditModal(b)}>Edit</button>
                         <button className="btn-sm danger" style={{ marginBottom: '5px', width: '48%' }} onClick={() => handleCancelBooking(b.id)}>Cancel</button>
                       </td>
                     </tr>
                   ))}
-                  {upcomingBookings.length === 0 && <tr><td colSpan={16} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No upcoming bookings.</td></tr>}
+                  {dateFilteredUpcomingBookings.length === 0 && <tr><td colSpan={16} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No bookings for selected date filter.</td></tr>}
                 </tbody>
               </table>
             </div>
           </div>
+          </>
+          )}
         </section>
+        )}
 
         {/* Past Bookings Table (admin only) */}
+        {activePanel === 'bookings' && bookingViewTab !== 'pending' && (
         <section style={{ marginBottom: 36, position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
-            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>📜 Past & Completed Bookings</h2>
+            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>
+              {bookingViewTab === 'confirmed' ? '✅ Confirmed Bookings' : bookingViewTab === 'cancelled' ? '❌ Cancelled Bookings' : '📜 Confirmed & Cancelled Bookings'}
+            </h2>
           </div>
           <div style={{ position: 'relative' }}>
             <button onClick={() => scrollTable(pastRef, 'left')} style={{ position: 'absolute', left: -15, top: '50%', transform: 'translateY(-50%)', zIndex: 10, width: 36, height: 36, borderRadius: '50%', background: 'var(--bg)', color: '#fff', border: '2px solid var(--pink)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 6px rgba(0,0,0,0.3)' }}>❮</button>
@@ -1212,7 +1369,7 @@ export default function Dashboard() {
                     <tr key={b.id} style={{ opacity: b.status === 'cancelled' ? 0.6 : 1 }}>
                       <td>
                         <span className="badge" style={{ background: b.status === 'completed' ? 'var(--emerald)' : 'var(--danger)' }}>
-                          {b.status.toUpperCase()}
+                          {b.status === 'completed' ? 'CONFIRMED' : 'CANCELLED'}
                         </span>
                       </td>
                       <td style={{ fontSize: '0.8rem', color: 'var(--cyan)', textTransform: 'capitalize', fontWeight: 'bold' }}>{(b.addedBy || 'Admin').split('@')[0]}</td>
@@ -1238,14 +1395,16 @@ export default function Dashboard() {
                       </td>
                     </tr>
                   ))}
-                  {pastBookings.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>No past bookings.</td></tr>}
+                  {pastBookings.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--muted)', padding: 24 }}>{bookingViewTab === 'confirmed' ? 'No confirmed bookings.' : bookingViewTab === 'cancelled' ? 'No cancelled bookings.' : 'No confirmed/cancelled bookings.'}</td></tr>}
                 </tbody>
               </table>
             </div>
           </div>
         </section>
+        )}
 
         {/* Driver Settlements */}
+        {activePanel === 'drivers' && (
         <section style={{ marginBottom: 36, position: 'relative' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
             <h2 style={{ fontSize: '1.1rem', margin: 0 }}>💰 Driver Settlements & Balances</h2>
@@ -1320,6 +1479,7 @@ export default function Dashboard() {
             </div>
           </div>
         </section>
+        )}
 
         {/* Payment History Modal */}
         {paymentHistoryModal && (

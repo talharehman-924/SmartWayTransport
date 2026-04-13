@@ -36,7 +36,13 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+      const raw = await res.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { error: 'Unexpected server response. Please try again.' };
+      }
 
       if (res.ok && data.success) {
         // Admin confirmed

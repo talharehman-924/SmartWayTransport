@@ -8,7 +8,7 @@ import {
   updatePassword, isPasswordStrong, memberSignOut,
   updateBooking, updateBookingStatus, deleteBooking, toggleCommissionStatus,
   getDriverBalances, recordDriverPayment, updateDriver, deleteDriver,
-  getDriverPaymentHistory
+  getDriverPaymentHistory, setVehicles as saveVehiclesConfig, setPackages as savePackagesConfig
 } from '../../lib/db';
 import { isSupabaseReady } from '../../lib/supabase';
 import VoucherTemplate from '../../components/VoucherTemplate';
@@ -48,6 +48,10 @@ export default function Dashboard() {
   // Form states
   const [newVehicle, setNewVehicle] = useState('');
   const [newPackage, setNewPackage] = useState('');
+  const [editingVehicle, setEditingVehicle] = useState('');
+  const [vehicleDraft, setVehicleDraft] = useState('');
+  const [editingPackage, setEditingPackage] = useState('');
+  const [packageDraft, setPackageDraft] = useState('');
   const [driver, setDriver] = useState({ name: '', contact: '', vehicleName: '', vehicleNumber: '', shirqaName: '', referByName: '', referralContact: '' });
   const [booking, setBooking] = useState({
     clientName: '', clientContact: '', nationality: '', pickupLocation: '', dropoffLocation: '', specialRequest: '', totalDuration: '',
@@ -209,6 +213,70 @@ export default function Dashboard() {
     const ok = await addPackage(newPackage.trim());
     if (ok) { setNewPackage(''); await loadData(); alert('Package added.'); }
     else alert('Already exists.');
+  }
+
+  async function handleDeleteVehicle(name) {
+    if (!confirm(`Delete vehicle "${name}"?`)) return;
+    try {
+      const updated = vehicles.filter(v => v !== name);
+      await saveVehiclesConfig(updated);
+      await loadData();
+      alert('Vehicle deleted.');
+    } catch (e) {
+      alert('Failed to delete vehicle: ' + e.message);
+    }
+  }
+
+  async function handleSaveVehicleEdit() {
+    if (!editingVehicle) return;
+    const nextName = vehicleDraft.trim();
+    if (!nextName) { alert('Vehicle name cannot be empty.'); return; }
+    if (vehicles.some(v => v !== editingVehicle && v.toLowerCase() === nextName.toLowerCase())) {
+      alert('Vehicle already exists.');
+      return;
+    }
+    try {
+      const updated = vehicles.map(v => (v === editingVehicle ? nextName : v));
+      await saveVehiclesConfig(updated);
+      setEditingVehicle('');
+      setVehicleDraft('');
+      await loadData();
+      alert('Vehicle updated.');
+    } catch (e) {
+      alert('Failed to update vehicle: ' + e.message);
+    }
+  }
+
+  async function handleDeletePackage(name) {
+    if (!confirm(`Delete package "${name}"?`)) return;
+    try {
+      const updated = packages.filter(p => p !== name);
+      await savePackagesConfig(updated);
+      await loadData();
+      alert('Package deleted.');
+    } catch (e) {
+      alert('Failed to delete package: ' + e.message);
+    }
+  }
+
+  async function handleSavePackageEdit() {
+    if (!editingPackage) return;
+    const nextName = packageDraft.trim();
+    if (!nextName) { alert('Package name cannot be empty.'); return; }
+    if (packages.some(p => p !== editingPackage && p.toLowerCase() === nextName.toLowerCase())) {
+      alert('Package already exists.');
+      return;
+    }
+    try {
+      const updated = packages.map(p => (p === editingPackage ? nextName : p));
+      await savePackagesConfig(updated);
+      setEditingPackage('');
+      setPackageDraft('');
+      await loadData();
+      alert('Package updated.');
+    } catch (e) {
+      alert('Failed to update package: ' + e.message);
+    }
   }
 
   async function handleAddDriver() {
@@ -682,6 +750,57 @@ export default function Dashboard() {
                 <button className="btn-sm primary" onClick={handleAddPackage}>Add</button>
               </div>
             </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, marginBottom: 24 }}>
+              <div style={{ padding: 16, borderRadius: 12, background: 'rgba(0,0,0,0.2)', borderLeft: '4px solid var(--cyan)' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 10 }}>Manage Vehicles</p>
+                <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {vehicles.map(v => (
+                    <div key={v} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)' }}>
+                      {editingVehicle === v ? (
+                        <>
+                          <input value={vehicleDraft} onChange={e => setVehicleDraft(e.target.value)} style={{ flex: 1 }} />
+                          <button className="btn-sm primary" onClick={handleSaveVehicleEdit}>Save</button>
+                          <button className="btn-sm" onClick={() => { setEditingVehicle(''); setVehicleDraft(''); }}>Cancel</button>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ flex: 1 }}>{v}</span>
+                          <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000' }} onClick={() => { setEditingVehicle(v); setVehicleDraft(v); }}>Edit</button>
+                          <button className="btn-sm danger" onClick={() => handleDeleteVehicle(v)}>✕</button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  {vehicles.length === 0 && <p style={{ color: 'var(--muted)', margin: 0 }}>No vehicles found.</p>}
+                </div>
+              </div>
+
+              <div style={{ padding: 16, borderRadius: 12, background: 'rgba(0,0,0,0.2)', borderLeft: '4px solid var(--pink)' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 10 }}>Manage Packages</p>
+                <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {packages.map(p => (
+                    <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.04)' }}>
+                      {editingPackage === p ? (
+                        <>
+                          <input value={packageDraft} onChange={e => setPackageDraft(e.target.value)} style={{ flex: 1 }} />
+                          <button className="btn-sm primary" onClick={handleSavePackageEdit}>Save</button>
+                          <button className="btn-sm" onClick={() => { setEditingPackage(''); setPackageDraft(''); }}>Cancel</button>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ flex: 1 }}>{p}</span>
+                          <button className="btn-sm" style={{ background: 'var(--amber)', color: '#000' }} onClick={() => { setEditingPackage(p); setPackageDraft(p); }}>Edit</button>
+                          <button className="btn-sm danger" onClick={() => handleDeletePackage(p)}>✕</button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  {packages.length === 0 && <p style={{ color: 'var(--muted)', margin: 0 }}>No packages found.</p>}
+                </div>
+              </div>
+            </div>
+
             <div style={{ padding: 20, borderRadius: 12, background: 'linear-gradient(135deg, rgba(16,185,129,0.1), transparent)', borderLeft: '4px solid var(--emerald)' }}>
               <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: 16 }}>👤 Add New Driver</p>
               <div className="row">
